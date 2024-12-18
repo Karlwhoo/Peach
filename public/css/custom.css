@@ -1,0 +1,940 @@
+body::-webkit-scrollbar {
+    display: none;
+}
+.modal::-webkit-scrollbar {
+    display: none !important;
+}
+/* data table */
+.dataTables_wrapper{
+	margin-top: 0.8rem !important;
+}
+.dataTables_filter label{
+	display: flex !important;
+	width: 15rem !important;
+	margin-left: .5rem !important;
+}
+
+.dataTables_wrapper .dataTables_filter {
+    float: right;
+    /* text-align: right; */
+	padding: 0px 20px !important;
+
+}
+.dataTables_wrapper {
+   
+	padding: 0px 20px !important;
+
+}
+form .control-label {
+    /* margin-right: 4px !important; */
+     padding-top: 6px !important;
+    margin-bottom: 0 !important; 
+    text-align: right !important;
+}
+form .form-label-check {
+    text-align: right !important;
+}
+body{
+	background-color: #202428;
+    overflow-x: hidden;
+}
+*{
+	list-style: none;
+	text-decoration: none;
+	margin: 0;
+	padding: 0;
+}
+.tx-center{
+	text-align: center !important;
+}
+span.material-symbols-outlined.nav-icon {
+    font-size: 24px !important;
+}
+.nav-sidebar .nav-item > .nav-link {
+    display: inline-flex !important;
+    position: relative !important;
+}
+.nav-sidebar .nav-item > .nav-link p {
+    margin-left: 0.5rem !important;
+}
+
+.custom__container{
+	padding:1rem 1.5rem;
+	height: auto;
+}
+.custom__index__table__bg{
+	background-color: #283046 !important;
+	border-radius: 0.5rem;
+}
+.custom__index__table__bg thead tr th{
+	color: #d0d2d6;
+	padding: 1rem !important;
+	
+}
+.custom__index__table__bg tbody tr td{
+	color: #d0d2d6;
+}
+.custom__index__table__bg tbody tr td svg{
+	color: #d0d2d6 !important;
+}
+.custom__add__heading{
+	color: #d0d2d6;
+	padding: 1rem 0rem 0rem 0rem;
+}
+.custom__add__heading h3{
+	font-size: 2rem;
+}
+.custom__add__tb__bg{
+	background-color: #283046 !important;
+	border-radius: 5px;
+}
+.form__custom label{
+	color: #d0d2d6;
+}
+.form__custom select.form-select {
+	background-color:#283046;
+	color: #d0d2d6;
+	border: 1px solid #626262 !important;
+}
+.form__custom input.form-control {
+	background-color:#283046;
+	color: #d0d2d6;
+	border: 1px solid #626262 !important;
+}
+.form__custom option{
+	color: #d0d2d6;
+}
+form .form-label{
+   margin-left: 4px !important;
+  
+}
+
+.custom__btn__puple{
+	border-radius: 4px;
+	padding: 0.9rem 1.5rem;
+	color: #d0d2d6;
+	background-color: #7367f0;
+}
+.custom__btn__puple:hover{
+	background: linear-gradient(118deg,#7367f0,rgba(115,103,240,.7));
+	box-shadow: 0 0 10px 1px rgb(115 103 240 / 70%);
+    border-radius: 4px;
+	padding: 0.9rem 1.5rem;
+	color: #d0d2d6;
+}
+
+.btn__navy__add__invoice{
+	border-radius: 4px;
+	padding: 1rem 4rem;
+	
+}
+.btn__navy__preview__invoice{
+	border-radius: 4px;
+	padding: 0.8rem 2.9rem;
+	border: 2px solid #001f3f;
+	color:  #001f3f;
+	border-radius: 5px;
+	
+}
+.btn__navy__save__invoice{
+	border-radius: 4px;
+	padding: 0.8rem 3.6rem;
+	border: 2px solid #001f3f;
+	color:  #001f3f;
+	border-radius: 5px;
+}
+/* .btn__navy:hover{
+	background: linear-gradient(118deg,#001F3F,rgba(4, 0, 29, 0.7));
+	box-shadow: 0 0 10px 1px rgba(3, 1, 29, 0.7);
+    border-radius: 4px;
+	padding: 0.9rem 2.6rem;
+	color: #d0d2d6;
+} */
+
+
+/* ............................................................. */
+.pt{
+	padding-top: 100px;
+}
+.container-custom{
+   padding: 40px;
+}
+/* register */
+.img{
+	background-image: url(../img/toa-heftiba-bcLE7reXFLM-unsplash.jpg);
+	height: 584px !important;
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: cover;
+
+}
+.overlay{
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 255, 255, .4);
+}
+.custom-form{
+	background-color: #111418;
+	color: beige;
+    padding: 44px;
+    height: 630px;
+    border-radius: 8px;
+}
+
+/* Sideber */
+/* .dashbroad__bg
+{
+	background-color: #161E31 !important;
+} */
+/* .content__wrapper__body__bg{
+	background-color: #161E31 !important;
+} */
+.sidebar::-webkit-scrollbar {
+    display: none;
+	
+}
+.sidebar{
+	-ms-overflow-style: none !important; 
+    scrollbar-width: none !important; 
+}
+.dashbroad__sidebar__bg
+{
+	background-color: #f79f84 !important;
+	
+}
+/* dashbroad nevber */
+
+
+/* .custom__main__header{
+	border: 0rem !important;
+	
+	margin-left: 250px !important;
+} */
+/* .dashbroad__nav__custom{
+	background-color: #283046 !important;
+	border-radius: .5rem !important;
+	
+}
+.custom__navber__list li a{
+	margin-left: 1.5rem !important;
+}
+.custom__navber__list li a svg{
+	color: #fff !important;
+	
+}
+.custom__navber__list li .star svg{
+	color:  rgb(252, 154, 35) !important;
+	
+} */
+.badge__up {
+    position: absolute;
+    top: -11px;
+    min-width: 1.429rem;
+    min-height: 1.429rem;
+    display: flex;
+    justify-content: center;
+   
+}
+.nav__profile__circle
+{
+	/* font-size: calc(11.2px); */
+    bottom: 0px;
+    right: 0px;
+	position: relative;
+	z-index: 1;
+	margin-bottom: 9px;
+    margin-right: 12px;
+}
+/* footer */
+.custom__main__footer
+{
+	background-color: #283046 !important;
+}
+.custom__main__footer i{
+	font-size: large;
+}
+/* side ber menu */
+ul .menu-btn{
+	/* background-color: greenyellow; */
+	padding: 10px 20px;
+	border-radius: 4px;
+	color: #fff;
+	font-size: 1.1rem;
+	transition: .3 ease;
+}
+ul .menu-btn i{
+	padding: 0px 6px 0px 2px;
+	font-size: 20px;
+}
+.rotated{
+	transform: rotate(90deg);
+	transition: .3 ease;
+}
+
+ul li .drop-down::before 
+{
+	transition: 0.3 ease;
+	font-size: x-large;
+	font-size: 20px !important;
+}
+.custom__toggle
+{
+	background-color: #283046 !important; 
+	display: none;
+	
+}
+
+ul .sub-btn {
+    padding: 10px 30px;
+}
+.sub-btn li a:active{
+	background: linear-gradient(118deg,#7367f0,rgba(115,103,240,.7));
+	box-shadow: 0 0 10px 1px rgb(115 103 240 / 70%);
+    border-radius: 4px;
+	padding: 1rem 4rem;
+}
+/* sideber invoice */
+.custom__toggle li{
+	margin-top: 1rem !important;
+}
+#custom__offset__invoice
+{
+	margin-left: 50%;
+}
+#custom__offset__invoice__item{
+	margin-left: 30%;
+}
+
+.table-responsive {
+    -webkit-overflow-scrolling: touch;
+    display: block;
+    overflow-x: hidden !important;
+    width: 100%;
+}
+.navbar-nav > .user-menu > .dropdown-menu {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    padding: 0;
+    width: 150px !important;
+}
+/* Data table */
+.dt-buttons {
+    padding-bottom: 0.8rem;
+    margin-left: 15px;
+}
+
+/* Add these styles */
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.table th,
+.table td {
+    white-space: nowrap;
+    vertical-align: middle !important;
+}
+
+/* Ensure action column doesn't wrap */
+.table td:last-child {
+    min-width: 100px;
+    text-align: center;
+}
+
+/* Style the action buttons container */
+.action-buttons {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+/* Responsive handling */
+@media (max-width: 992px) {
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Add these styles for table cell truncation */
+.table td {
+    max-width: 0; /* Required for text-truncate to work */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Hover effect to show full text */
+.table td span.text-truncate:hover {
+    position: relative;
+}
+
+.table td span.text-truncate:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: 0;
+    top: 100%;
+    background: #fff;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    z-index: 1000;
+    white-space: normal;
+    word-break: break-all;
+    min-width: 200px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Ensure action column has enough space */
+.table td:last-child {
+    min-width: 120px;
+    width: 120px;
+}
+
+/* Add the styles here */
+.badge {
+    font-size: 0.85em;
+    padding: 0.35em 0.65em;
+    font-weight: 500;
+}
+
+/* Make buttons display inline */
+.dt-buttons .btn {
+    margin: 0 2px;
+}
+
+/* Adjust button group spacing */
+.dt-button-collection {
+    margin: 2px;
+}
+
+/* DataTable Buttons Styling */
+.dt-buttons {
+    margin-left: 15px;
+    display: flex;
+    gap: 4px;
+}
+
+/* Base button styles */
+.dt-buttons .btn {
+    padding: 8px;
+    height: 45px;
+    width: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    border: none;
+    color: white;
+    background: none;
+    transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+/* Button colors - making them fully solid */
+.dt-buttons .btn-navy {
+    background-color: #1a237e;
+}
+
+.dt-buttons .btn-success {
+    background-color: #4caf50;
+}
+
+.dt-buttons .btn-danger {
+    background-color: #f44336;
+}
+
+.dt-buttons .btn-primary {
+    background-color: #2196f3;
+}
+
+.dt-buttons .btn-info {
+    background-color: #00bcd4;
+}
+
+/* Hover state */
+.dt-buttons .btn:hover {
+    opacity: 0.9;
+}
+
+/* Active/Touch state */
+.dt-buttons .btn:active {
+    transform: scale(0.95);
+    opacity: 0.8;
+}
+
+/* Icon styling */
+.dt-buttons .btn i {
+    font-size: 18px;
+}
+
+/* Remove any shadows */
+.btn-shadow, .btn-shadow:hover {
+    box-shadow: none !important;
+}
+
+/* Enhanced DataTables Buttons Styling */
+.btn-sm {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.25s ease-in-out;
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-sm i {
+    font-size: 0.9rem;
+    color: #fff !important;
+    position: relative;
+    z-index: 2;
+    transition: all 0.25s ease-in-out;
+}
+
+.btn-sm:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+}
+
+.btn-sm:active {
+    transform: scale(0.95);
+}
+
+/* Button specific styles with modern solid colors */
+.btn-primary {
+    background-color: #2196F3 !important;
+    box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+}
+
+.btn-success {
+    background-color: #4CAF50 !important;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.bg-purple {
+    background-color: #7E57C2 !important;
+    box-shadow: 0 4px 15px rgba(126, 87, 194, 0.3);
+}
+
+.btn-info {
+    background-color: #00BCD4 !important;
+    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3);
+}
+
+.btn-dark {
+    background-color: #455A64 !important;
+    box-shadow: 0 4px 15px rgba(69, 90, 100, 0.3);
+}
+
+/* Remove any conflicting styles */
+.btn-sm, .btn-sm:hover, .btn-sm:active, .btn-sm:focus {
+    color: #fff !important;
+    text-decoration: none !important;
+}
+
+/* Button group container */
+.dt-buttons {
+    display: inline-flex;
+    gap: 6px;
+    padding: 10px 0;
+    flex-wrap: wrap;
+}
+
+.me-1 {
+    margin-right: 0 !important;
+}
+
+/* Hover overlay effect */
+.btn-sm::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(100%);
+    transition: transform 0.25s ease-in-out;
+    pointer-events: none;
+}
+
+.btn-sm:hover::before {
+    transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .dt-buttons {
+        justify-content: center;
+        gap: 5px;
+    }
+    
+    .btn-sm {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .btn-sm i {
+        font-size: 0.85rem;
+    }
+}
+
+/* Action Buttons Styling */
+.action-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    background: none;
+}
+
+/* Delete Button */
+.DeleteBtn, 
+.PermanentlyDeleteBtn {
+    color: #dc3545;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid #dc3545;
+}
+
+.DeleteBtn::after {
+    content: 'Delete';
+    font-size: 0.875rem;
+}
+
+.PermanentlyDeleteBtn::after {
+    content: 'Delete';
+    font-size: 0.875rem;
+}
+
+.DeleteBtn:hover,
+.PermanentlyDeleteBtn:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+/* Restore Button */
+.RestoreBtn {
+    color: #28a745;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid #28a745;
+}
+
+.RestoreBtn::after {
+    content: 'Restore';
+    font-size: 0.875rem;
+}
+
+.RestoreBtn:hover {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+/* Empty Trash Button */
+#EmptyTrashBtn,
+.bg-maroon {
+    background: linear-gradient(135deg, #dc3545, #c82333) !important;
+    color: white !important;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#EmptyTrashBtn i,
+.bg-maroon i {
+    margin-right: 4px;
+}
+
+#EmptyTrashBtn:hover,
+.bg-maroon:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+/* Restore All Button */
+#RestoreAllBtn,
+.btn-success {
+    background: linear-gradient(135deg, #28a745, #218838) !important;
+    color: white !important;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#RestoreAllBtn i,
+.btn-success i {
+    margin-right: 4px;
+}
+
+#RestoreAllBtn:hover,
+.btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+/* Action buttons container */
+.action__trash {
+    display: inline-flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* Icon specific styles */
+.fa-trash-can,
+.fa-trash-arrow-up,
+.fa-undo,
+.fa-recycle {
+    font-size: 1rem;
+    transition: transform 0.2s ease;
+}
+
+button:hover i {
+    transform: scale(1.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .action-btn,
+    .DeleteBtn,
+    .RestoreBtn,
+    .PermanentlyDeleteBtn {
+        padding: 6px 10px;
+        font-size: 0.813rem;
+    }
+    
+    .DeleteBtn::after,
+    .PermanentlyDeleteBtn::after,
+    .RestoreBtn::after {
+        font-size: 0.813rem;
+    }
+    
+    #EmptyTrashBtn,
+    #RestoreAllBtn,
+    .bg-maroon,
+    .btn-success {
+        padding: 6px 12px;
+        font-size: 0.813rem;
+    }
+    
+    .action__trash {
+        gap: 8px;
+    }
+}
+
+/* Alert styling improvements */
+.alert {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.alert-success {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+/* Tooltip improvements */
+[data-bs-toggle="tooltip"] {
+    position: relative;
+}
+
+/* Back button styling */
+.bg-navy {
+    background: linear-gradient(135deg, #0a2e4d, #0c3b64) !important;
+    color: white !important;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(10, 46, 77, 0.2);
+    transition: all 0.2s ease;
+}
+
+.bg-navy:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(10, 46, 77, 0.3);
+}
+
+/* Table improvements */
+.table {
+    margin-bottom: 0;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .action-btn {
+        padding: 4px 8px;
+    }
+    
+    .DeleteBtn,
+    .RestoreBtn,
+    .PermanentlyDeleteBtn {
+        padding: 4px;
+    }
+    
+    #EmptyTrashBtn,
+    #RestoreAllBtn,
+    .bg-maroon,
+    .btn-success,
+    .bg-navy {
+        padding: 6px 12px;
+        font-size: 0.875rem;
+    }
+}
+
+/* Delete Confirmation Modal */
+.delete-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.delete-modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.delete-modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+    transform: translateY(-20px);
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.delete-modal.show .delete-modal-content {
+    transform: translateY(0);
+}
+
+.delete-modal-icon {
+    width: 70px;
+    height: 70px;
+    border: 3px solid #ffeaea;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+}
+
+.delete-modal-icon i {
+    color: #dc3545;
+    font-size: 2rem;
+}
+
+.delete-modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.delete-modal-text {
+    color: #666;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.delete-modal-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.btn-delete-confirm {
+    padding: 0.5rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    background: #dc3545;
+    color: white;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-delete-confirm:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+}
+
+.btn-delete-cancel {
+    padding: 0.5rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    background: #3498db;
+    color: white;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-delete-cancel:hover {
+    background: #2980b9;
+    transform: translateY(-1px);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
