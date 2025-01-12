@@ -3,71 +3,107 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Providers\RouteServiceProvider;
 use App\Models\User;
-use Illuminate\Foundation\Auth\RegistersUsers;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
+use App\Mail\OtpMail;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 class RegisterController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Register Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller handles the registration of new users as well as their
-    | validation and creation. By default this controller uses a trait to
-    | provide this functionality without requiring any additional code.
-    |
-    */
-
-    use RegistersUsers;
-
-    /**
-     * Where to redirect users after registration.
-     *
-     * @var string
-     */
-    protected $redirectTo = RouteServiceProvider::HOME;
-
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
-    public function __construct()
+    public function sendOtp(Request $request)
     {
-        $this->middleware('guest');
+        try {
+            // Add debugging
+            \Log::info('Checking email: ' . $request->email);
+            
+            // Check if email exists before other validations
+            $existingUser = User::where('email', $request->email)->first();
+            \Log::info('Existing user check result: ', ['exists' => !is_null($existingUser)]);
+            
+            if ($existingUser) {
+                \Log::info('Email already exists: ' . $request->email);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This email address is already registered. Please use a different email or login to your existing account.'
+                ], 422);
+            }
+
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255',
+                'password' => 'required|string|min:8|confirmed',
+            ]);
+
+            // Generate OTP
+            $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            
+            // Store OTP and registration data in cache
+            $cacheKey = 'registration_' . $request->email;
+            Cache::put($cacheKey, [
+                'otp' => $otp,
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => $request->password,
+            ], now()->addMinutes(10));
+
+            // Send OTP email
+            try {
+                Mail::to($request->email)->send(new OtpMail($request->name, $otp));
+                \Log::info('OTP email sent successfully to: ' . $request->email);
+                return response()->json(['success' => true]);
+            } catch (\Exception $e) {
+                \Log::error('Failed to send OTP email: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to send OTP email: ' . $e->getMessage()
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error in sendOtp: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
-    /**
-     * Get a validator for an incoming registration request.
-     *
-     * @param  array  $data
-     * @return \Illuminate\Contracts\Validation\Validator
-     */
-    protected function validator(array $data)
+    public function verifyOtp(Request $request)
     {
-        return Validator::make($data, [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        $request->validate([
+            'otp' => 'required|string|size:6',
+            'email' => 'required|email'
         ]);
-    }
 
-    /**
-     * Create a new user instance after a valid registration.
-     *
-     * @param  array  $data
-     * @return \App\Models\User
-     */
-    protected function create(array $data)
-    {
-        return User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-        ]);
+        $cacheKey = 'registration_' . $request->email;
+        $cachedData = Cache::get($cacheKey);
+
+        if (!$cachedData || $cachedData['otp'] !== $request->otp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid OTP'
+            ], 400);
+        }
+
+        // Create user
+        try {
+            User::create([
+                'name' => $cachedData['name'],
+                'email' => $cachedData['email'],
+                'password' => Hash::make($cachedData['password']),
+            ]);
+
+            // Clear the cache
+            Cache::forget($cacheKey);
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create user'
+            ], 500);
+        }
     }
 }

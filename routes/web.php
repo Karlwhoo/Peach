@@ -27,6 +27,9 @@ use App\Http\Controllers\SMSController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\PaymentSettingController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\EmailController;
+use App\Http\Controllers\InvoiceEmailController;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,7 +49,7 @@ require __DIR__ . '/auth.php';
 |--------------------------------------------------------------------------
 */
 Route::resource('user', RegisteredUserController::class);
-Route::post('user/assign/role', [UserController::class,'assignRole']);
+Route::post('/user/assign/role', [UserController::class, 'assignRole'])->name('user.assign.role');
 
 Route::get('/', [ApplepeachController::class, 'index']);
 
@@ -327,6 +330,12 @@ Route::group(['middleware' => 'auth'],function(){
     Route::put('/payment-settings/{paymentSetting}', [PaymentSettingController::class, 'update'])->name('paymentSetting.update');
     Route::delete('/payment-settings/{paymentSetting}', [PaymentSettingController::class, 'destroy'])->name('paymentSetting.destroy');
 
+    Route::post('/bank-accounts', [PaymentSettingController::class, 'storeBankAccount'])->name('bank-accounts.store');
+    Route::get('/bank-accounts', [PaymentSettingController::class, 'getBankAccounts'])->name('bank-accounts.index');
+    Route::delete('/bank-accounts/{id}', [PaymentSettingController::class, 'deleteBankAccount'])->name('bank-accounts.destroy');
+
+    Route::put('/bank-accounts/{id}', [PaymentSettingController::class, 'updateBankAccount'])->name('bank-accounts.update');
+
 });
 
 Route::post('sslcommerz/success',[PaymentController::class,'success'])->name('payment.success');
@@ -368,3 +377,37 @@ Route::get('/booking/availability', [App\Http\Controllers\BookingController::cla
 */
 Route::get('/assets/delete', [AssetController::class, 'destroyAll']);
 Route::resource('assets', AssetController::class);
+
+Route::post('/register/send-otp', [App\Http\Controllers\Auth\RegisterController::class, 'sendOtp'])
+    ->name('register.send-otp')
+    ->middleware('web');
+
+Route::post('/register/verify-otp', [App\Http\Controllers\Auth\RegisterController::class, 'verifyOtp'])
+    ->name('register.verify-otp')
+    ->middleware('web');
+
+// Add this route temporarily for debugging
+Route::get('/check-email/{email}', function($email) {
+    $user = \App\Models\User::where('email', $email)->first();
+    return response()->json([
+        'exists' => !is_null($user),
+        'email' => $email
+    ]);
+});
+
+// Password Reset Routes
+Route::post('/forgot-password/send-otp', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'sendOtp'])
+    ->name('password.send-otp')
+    ->middleware('web');
+
+Route::post('/forgot-password/verify-otp', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'verifyOtp'])
+    ->name('password.verify-otp')
+    ->middleware('web');
+
+Route::post('/forgot-password/reset', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'resetPassword'])
+    ->name('password.reset')
+    ->middleware('web');
+
+Route::post('/send-email', [EmailController::class, 'send']);
+
+Route::post('/send-invoice-email', [InvoiceEmailController::class, 'send']);

@@ -48,7 +48,8 @@ class AssetController extends Controller
             'purchase_cost' => 'required|numeric|min:0',
             'asset_cost' => 'required|numeric|min:0',
             'useful_life' => 'required|integer|min:1',
-            'salvage_value' => 'required|numeric|min:0'
+            'salvage_value' => 'required|numeric|min:0',
+            'category' => 'required|string|in:Furnitures and Fixtures,Appliances,Technology and Electronics,Bedding and Linen,Kitchen Equipment,Bathroom Fixtures and Equipment,Decorative Items'
         ]);
 
         try {
@@ -60,7 +61,8 @@ class AssetController extends Controller
                 'purchase_cost' => $request->purchase_cost,
                 'asset_cost' => $request->asset_cost,
                 'useful_life' => $request->useful_life,
-                'salvage_value' => $request->salvage_value
+                'salvage_value' => $request->salvage_value,
+                'category' => $request->category
             ]);
 
             return response()->json(['success' => true, 'message' => 'Asset created successfully']);
@@ -144,7 +146,8 @@ class AssetController extends Controller
             'purchase_cost' => 'required|numeric|min:0',
             'asset_cost' => 'required|numeric|min:0',
             'useful_life' => 'required|integer|min:1',
-            'salvage_value' => 'required|numeric|min:0'
+            'salvage_value' => 'required|numeric|min:0',
+            'category' => 'required|string|in:Furnitures and Fixtures,Appliances,Technology and Electronics,Bedding and Linen,Kitchen Equipment,Bathroom Fixtures and Equipment,Decorative Items'
         ]);
 
         $asset->update($validated);

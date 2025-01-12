@@ -179,5 +179,9 @@
         $('.modal:visible').length && $(document.body).addClass('modal-open');
     });
     </script>
+
+    <!-- Before closing body tag -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('js/custom-js/paymentSetting.js') }}"></script>
 </body>
 </html>

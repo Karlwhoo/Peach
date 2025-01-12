@@ -20,12 +20,15 @@ class Booking extends Model
         'TotalPrice',
         'Status',
         'Tax',
+        'LastSelectedDiscount',
         'Category',
         'AddOns',
         'AmountPaid',
         'TotalBalance',
         'ModeOfPayment',
-        'RefNo'
+        'RefNo',
+        'IdType',
+        'IdNumber'
     ];
 
     public function guest()

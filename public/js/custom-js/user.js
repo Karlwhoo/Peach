@@ -181,42 +181,61 @@ $(document).ready(function(){
         $('#AssignRoleForm')[0].reset();
     });
 
-    $('#AssignRoleForm').on('submit',function(e){
+    $('#AssignRoleForm').on('submit', function(e) {
         e.preventDefault();
 
+        // Log form data before sending
+        console.log('Form data:', $(this).serialize());
+
         Swal.fire({
-          title: 'Assign Role ?',
-          text: "Access can be revoked anytime. No Worry!",
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#3085d6',
-          cancelButtonColor: '#d33',
-          confirmButtonText: 'Yes, Assign New Role'
+            title: 'Assign Role ?',
+            text: "Access can be revoked anytime. No Worry!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, Assign New Role'
         }).then((result) => {
-          if (result.isConfirmed) {
-            $.ajax({
-                type:'POST',
-                url:'/user/assign/role/',
-                data:$('#AssignRoleForm').serialize(),
-                success:function(data){
-                    $('#AssignRoleModal').modal('hide');
-                    UserList.draw(false); 
-                    Swal.fire(
-                      'Role Assigned!',
-                      'New role assigned successfully',
-                      'success'
-                    );
-                },
-                error:function(data){
-                    Swal.fire(
-                      'Error!',
-                      'Role Assign Failed !',
-                      'error'
-                    );
-                    console.log(data);
-                },
-            });            
-          }
+            if (result.isConfirmed) {
+                $.ajax({
+                    type: 'POST',
+                    url: '/user/assign/role',
+                    data: $(this).serialize(),
+                    success: function(response) {
+                        console.log('Server response:', response);
+                        
+                        if (response.success) {
+                            $('#AssignRoleModal').modal('hide');
+                            UserList.draw(false);
+                            Swal.fire(
+                                'Role Assigned!',
+                                response.message,
+                                'success'
+                            );
+                        } else {
+                            Swal.fire(
+                                'Error!',
+                                response.message || 'Failed to assign role',
+                                'error'
+                            );
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('AJAX Error:', xhr);
+                        let errorMessage = 'Role assignment failed';
+                        
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        
+                        Swal.fire(
+                            'Error!',
+                            errorMessage,
+                            'error'
+                        );
+                    }
+                });
+            }
         });
     });
 

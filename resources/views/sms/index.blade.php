@@ -67,6 +67,19 @@
                                         <span id="charCount">0</span> characters
                                     </div>
                                 </div>
+
+                                <!-- Attachments Field -->
+                                <div class="form-group mb-4">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-paperclip me-2"></i>Attachments
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="file" name="attachments[]" class="form-control" multiple>
+                                    </div>
+                                    <div class="form-text mt-2">
+                                        Maximum file size: 10MB. Allowed files: PDF, DOC, DOCX, JPG, PNG
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -76,8 +89,8 @@
                             <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
                                 <i class="fas fa-times me-2"></i>Cancel
                             </button>
-                            <button type="submit" class="btn btn-primary" id="sendButton" onclick="openGmail(event)">
-                                <i class="fas fa-paper-plane me-2"></i>Open in Gmail
+                            <button type="submit" class="btn btn-primary" id="sendButton">
+                                <i class="fas fa-paper-plane me-2"></i>Send Email
                             </button>
                         </div>
                     </div>
@@ -114,6 +127,8 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <style>
 .card {
     border: none;
@@ -149,6 +164,22 @@
 .card-body {
     padding: 1.5rem;
 }
+
+.swal2-popup {
+    font-size: 0.9rem;
+}
+
+.swal2-title {
+    font-size: 1.5rem;
+}
+
+.swal2-confirm {
+    padding: 0.5rem 1.5rem !important;
+}
+
+.swal2-actions {
+    margin-top: 1.5rem !important;
+}
 </style>
 
 <script>
@@ -173,35 +204,121 @@ document.addEventListener('DOMContentLoaded', function() {
     emailInput.addEventListener('input', updatePreviews);
     subjectInput.addEventListener('input', updatePreviews);
     messageInput.addEventListener('input', updatePreviews);
-});
 
-function openGmail(event) {
-    event.preventDefault();
-    
+    // Replace the openGmail function with new form submission
     const form = document.getElementById('emailForm');
-    const sendButton = document.getElementById('sendButton');
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
+        }
 
-    if (!form.checkValidity()) {
-        form.classList.add('was-validated');
-        return;
-    }
+        const sendButton = document.getElementById('sendButton');
+        sendButton.disabled = true;
+        sendButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
 
-    // Disable button and show loading state
-    sendButton.disabled = true;
-    sendButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Opening Gmail...';
+        // Show loading state
+        Swal.fire({
+            title: 'Sending Email',
+            html: 'Please wait...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
 
-    const email = document.querySelector('input[name="email"]').value;
-    const subject = document.querySelector('input[name="subject"]').value;
-    const message = document.querySelector('textarea[name="message"]').value;
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+        formData.append('email', document.querySelector('input[name="email"]').value);
+        formData.append('subject', document.querySelector('input[name="subject"]').value);
+        formData.append('message', document.querySelector('textarea[name="message"]').value);
+        
+        // Add files to FormData
+        const fileInput = document.querySelector('input[name="attachments[]"]');
+        for (let file of fileInput.files) {
+            formData.append('attachments[]', file);
+        }
 
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
-    window.open(gmailUrl, '_blank');
+        try {
+            const response = await fetch('/send-email', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    // Remove Content-Type header to let browser set it automatically with boundary
+                },
+                body: formData
+            });
 
-    // Reset button state
-    setTimeout(() => {
-        sendButton.disabled = false;
-        sendButton.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Open in Gmail';
-    }, 1000);
-}
+            if (!response.ok) {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const result = await response.json();
+                    throw new Error(result.message || 'Failed to send email');
+                } else {
+                    const text = await response.text();
+                    throw new Error('Server error: ' + response.status);
+                }
+            }
+
+            const result = await response.json();
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Email sent successfully',
+                confirmButtonColor: '#0d6efd'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.reset();
+                    updatePreviews();
+                }
+            });
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Error sending email: ' + error.message,
+                confirmButtonColor: '#dc3545'
+            });
+        } finally {
+            sendButton.disabled = false;
+            sendButton.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Send Email';
+        }
+    });
+
+    // Add file size validation
+    const attachmentInput = document.querySelector('input[name="attachments[]"]');
+    attachmentInput.addEventListener('change', function(e) {
+        const files = e.target.files;
+        const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+        const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
+        
+        for (let file of files) {
+            if (file.size > maxSize) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'File Too Large',
+                    text: `${file.name} is larger than 10MB`,
+                    confirmButtonColor: '#ffc107'
+                });
+                e.target.value = ''; // Clear the input
+                return;
+            }
+            
+            if (!allowedTypes.includes(file.type)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid File Type',
+                    text: `${file.name} is not an allowed file type`,
+                    confirmButtonColor: '#ffc107'
+                });
+                e.target.value = ''; // Clear the input
+                return;
+            }
+        }
+    });
+});
 </script>
 @endsection

@@ -89,24 +89,7 @@ $(document).ready(function(){
                 data: 'Status',
                 name: 'Status',
                 render: function(data, type, row) {
-                    if (type === 'display') {
-                        let statusClass = '';
-                        switch(data.toLowerCase()) {
-                            case 'checkin':
-                                statusClass = 'bg-success';
-                                break;
-                            case 'reserved':
-                                statusClass = 'bg-warning';
-                                break;
-                            case 'rebooked':
-                                statusClass = 'bg-info';
-                                break;
-                            default:
-                                statusClass = 'bg-secondary';
-                        }
-                        return `<span class="badge ${statusClass}">${data}</span>`;
-                    }
-                    return data;
+                    return formatStatus(data);
                 }
             },
             {
@@ -167,15 +150,30 @@ $(document).ready(function(){
     $('#SubmitBtn').on('click', function(e) {
         e.preventDefault();
         
-        // Get all form data
         var formData = new FormData($('#NewBookingForm')[0]);
+        
+        // Add ID Type and Number to formData
+        formData.append('IdType', $('#IdType').val());
+        formData.append('IdNumber', $('#IdNumber').val());
+        
+        // Get the selected discount value
+        var selectedDiscount = $('#Tax').val();
+        if (!selectedDiscount) {
+            selectedDiscount = '0'; // Default to 0 if no discount is selected
+        }
         
         // Add calculated fields
         formData.append('NumberOfDays', $('#NumberOfDays').val());
         formData.append('TotalPrice', $('#TotalPrice').val());
         formData.append('TotalBalance', $('#TotalBalance').val());
-        formData.append('Tax', $('#Tax').val());
+        formData.append('Tax', selectedDiscount);
+        formData.append('LastSelectedDiscount', selectedDiscount);
         formData.append('AmountPaid', $('#AmountPaid').val() || 0);
+        
+        // Add reference number if payment mode is GCash
+        if ($('#PaymentMode').val() === 'gcash') {
+            formData.append('RefNo', $('#RefNo').val());
+        }
 
         // Show loading state
         Swal.fire({
@@ -276,6 +274,14 @@ $(document).ready(function(){
         $(this).removeClass('is-invalid');
     });
 
+    // Add these variables at the top of your file to store reference numbers
+    let originalRefNo = '';
+    let storedRefs = {
+        gcash: '',
+        bank: ''
+    };
+
+    // Update the edit button click handler
     $('body').on('click', '#EditBtn', function(e) {
         e.preventDefault();
         var ID = $(this).data('id');
@@ -294,38 +300,92 @@ $(document).ready(function(){
                 $('#EditCategory').val(data.Category);
                 $('#EditStatus').val(data.Status);
                 $('#EditAddOns').val(data.AddOns);
-                $('#EditPaymentMode').val(data.ModeOfPayment);
-                $('#EditRefNo').val(data.RefNo);
-                $('#EditTax').val(data.Tax);
-                $('#EditDiscountDisplay').text(data.Tax);
+                
+                // Handle payment mode and reference number
+                $('#EditPaymentMode').val(data.ModeOfPayment).data('previous-mode', data.ModeOfPayment);
+                const refContainer = $('#EditGcashRefContainer');
+                const refNoInput = $('#EditRefNo');
+                const refNoLabel = $('label[for="EditRefNo"]');
+                
+                if (data.ModeOfPayment === 'gcash' || data.ModeOfPayment === 'bank') {
+                    refContainer.show();
+                    refNoInput.val(data.RefNo);
+                    refNoInput.prop('required', true);
+                    
+                    const labelText = data.ModeOfPayment === 'gcash' ? 
+                        'GCash Reference Number: ' : 
+                        'Bank Reference Number: ';
+                    refNoLabel.html(labelText + '<span class="text-danger">*</span>');
+                } else {
+                    refContainer.hide();
+                    refNoInput.val('').prop('required', false);
+                }
+                
+                // Set Tax/Discount
+                var discountValue = data.LastSelectedDiscount || data.Tax;
+                var $taxSelect = $('#EditTax');
+                
+                // Convert discount value to percentage if it's in decimal
+                if (discountValue < 1) {
+                    discountValue = discountValue * 100;
+                }
+                
+                // Find the matching option
+                var $options = $taxSelect.find('option');
+                var matchFound = false;
+                
+                $options.each(function() {
+                    var optionValue = parseFloat($(this).val());
+                    if (Math.abs(optionValue - discountValue) < 0.01) {
+                        matchFound = true;
+                        $taxSelect.val(optionValue);
+                        // Update option text if we have tax name
+                        if (data.TaxName) {
+                            $(this).text(data.TaxName + ' (' + optionValue + '%)');
+                        }
+                        return false; // Break the loop
+                    }
+                });
+                
+                if (!matchFound) {
+                    $taxSelect.val('0'); // Default to no discount
+                }
+                
+                // Store the last selected discount
+                $('#LastSelectedDiscount').val(discountValue);
+                
+                // Set other fields
                 $('#EditAmountPaid').val(data.AmountPaid);
                 $('#EditNumberOfDays').val(data.NumberOfDays);
                 $('#EditTotalPrice').val(data.TotalPrice);
                 $('#EditTotalBalance').val(data.TotalBalance);
-                
-                
-                // Format dates for datetime-local input
-                var checkInDate = new Date(data.CheckInDate);
-                var checkOutDate = new Date(data.CheckOutDate);
-                
-                $('#EditCheckInDate').val(formatDateTimeForInput(checkInDate));
-                $('#EditCheckOutDate').val(formatDateTimeForInput(checkOutDate));
-                
-                // Set calculated fields
-                $('#EditNumberOfDays').val(data.NumberOfDays);
-                $('#EditTotalPrice').val(parseFloat(data.TotalPrice).toFixed(2));
-                $('#EditAmountPaid').val(parseFloat(data.AmountPaid).toFixed(2));
-                $('#EditTotalBalance').val(parseFloat(data.TotalBalance).toFixed(2));
-                
-                // Show modal
+                $('#EditIdType').val(data.IdType);
+                $('#EditIdNumber').val(data.IdNumber);
+
+                // Format dates
+                if (data.CheckInDate) {
+                    $('#EditCheckInDate').val(moment(data.CheckInDate).format('YYYY-MM-DDTHH:mm'));
+                }
+                if (data.CheckOutDate) {
+                    $('#EditCheckOutDate').val(moment(data.CheckOutDate).format('YYYY-MM-DDTHH:mm'));
+                }
+
+                // Enable update button
+                $('#UpdateBtn').prop('disabled', false);
+
+                // Show the modal
                 $('#EditBookingModal').modal('show');
                 
-                // Calculate initial values
-                updateTotalPrice();
+                // Trigger calculations
+                calculateEditBooking();
             },
             error: function(error) {
-                console.error('Error fetching booking details:', error);
-                Swal.fire('Error', 'Unable to fetch booking details', 'error');
+                console.error('Error fetching booking:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to fetch booking details'
+                });
             }
         });
     });
@@ -347,7 +407,6 @@ $(document).ready(function(){
     $('#UpdateBtn').on('click', function(e) {
         e.preventDefault();
         
-        // Get form data
         var id = $('#IDEdit').val();
         var formData = {
             _token: $('meta[name="csrf-token"]').attr('content'),
@@ -355,6 +414,8 @@ $(document).ready(function(){
             RoomID: $('#EditRoom').val(),
             GuestID: $('#EditGuest').val(),
             Status: $('#EditStatus').val(),
+            IdType: $('#EditIdType').val() || '', // Ensure IdType is included
+            IdNumber: $('#EditIdNumber').val() || '', // Ensure IdNumber is included
             AmountPaid: $('#EditAmountPaid').val(),
             TotalBalance: $('#EditTotalBalance').val(),
             CheckInDate: $('#EditCheckInDate').val(),
@@ -364,15 +425,25 @@ $(document).ready(function(){
             Tax: $('#EditTax').val(),
             AddOns: $('#EditAddOns').val(),
             ModeOfPayment: $('#EditPaymentMode').val(),
-            RefNo: $('#EditRefNo').val()
+            RefNo: $('#EditRefNo').val()  // Always include RefNo value
         };
-        
+
         // Validate required fields
-        if (!formData.Status || !formData.AmountPaid || !formData.RoomID) {
+        if (!formData.IdType) {
             Swal.fire({
                 icon: 'error',
                 title: 'Validation Error',
-                text: 'Please fill in all required fields'
+                text: 'ID Type is required'
+            });
+            return;
+        }
+
+        // Validate reference number for bank and gcash payments
+        if ((formData.ModeOfPayment === 'gcash' || formData.ModeOfPayment === 'bank') && !formData.RefNo) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Validation Error',
+                text: 'Reference Number is required for GCash or Bank payments'
             });
             return;
         }
@@ -732,15 +803,16 @@ $(document).ready(function(){
             var checkIn = new Date($('#CheckInDate').val());
             var checkOut = new Date($('#CheckOutDate').val());
             
-            // Get room price from selected room option
-            var roomPrice = parseFloat($('#RoomID option:selected').data('price') || 0);
-            
-            if (checkIn && checkOut && !isNaN(roomPrice)) {
+            if (checkIn && checkOut && !isNaN(checkIn) && !isNaN(checkOut)) {
                 // Calculate number of days
                 var timeDiff = checkOut.getTime() - checkIn.getTime();
                 var numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                $('#NumberOfDays').val(numberOfDays);
                 
-                // Get add-ons price
+                // Get room price
+                var roomPrice = parseFloat($('#RoomPrice').val() || 0);
+                
+                // Calculate add-ons
                 var addOnPrice = 0;
                 var addOns = $('#AddOns').val();
                 if (addOns === 'bed') {
@@ -749,23 +821,20 @@ $(document).ready(function(){
                     addOnPrice = 300;
                 }
                 
-                // Calculate subtotal (room price * days + addons)
-                var roomTotal = roomPrice * numberOfDays;
-                var subtotal = roomTotal + addOnPrice;
-                
-                // Update fields
-                $('#NumberOfDays').val(numberOfDays);
+                // Calculate subtotal
+                var subtotal = (numberOfDays * roomPrice) + addOnPrice;
                 $('#SubTotal').val(subtotal.toFixed(2));
                 
-                // Calculate final total price with discount
-                var discountRate = parseFloat($('#Tax').val() || 0) / 100;
-                var discountAmount = subtotal * discountRate;
-                var totalPrice = subtotal - discountAmount;
+                // Calculate discount - Now the Tax value is already in percentage (e.g. 20 for 20%)
+                var discountRate = parseFloat($('#Tax').val() || 0);
+                var discountAmount = (discountRate / 100) * subtotal;
+                $('#DiscountAmount').val(discountAmount.toFixed(2));
                 
-                // Update remaining fields
+                // Calculate total price
+                var totalPrice = subtotal - discountAmount;
                 $('#TotalPrice').val(totalPrice.toFixed(2));
                 
-                // Update balance if amount paid exists
+                // Update total balance based on amount paid
                 var amountPaid = parseFloat($('#AmountPaid').val() || 0);
                 var totalBalance = totalPrice - amountPaid;
                 $('#TotalBalance').val(totalBalance.toFixed(2));
@@ -788,22 +857,31 @@ $(document).ready(function(){
     });
 
     // Function to update discount display
-    function updateDiscountDisplay(selectElement, displayElement) {
+    function updateDiscountDisplay(selectElement) {
         const selectedOption = $(selectElement).find('option:selected');
-        const discountText = selectedOption.text();
-        $(displayElement).text(discountText);
+        const discountRate = parseFloat(selectedOption.val() || 0);
+        
+        // Store the last selected discount in a hidden input
+        // The discount is stored as a percentage value (e.g., 20 for 20%)
+        if (selectElement === '#EditTax') {
+            $('#LastSelectedDiscount').val(discountRate);
+        }
+        
+        calculateBooking();
     }
 
     // For new booking form
     $('#Tax').on('change', function() {
-        updateDiscountDisplay('#Tax', '#DiscountDisplay');
-        calculateBooking();
+        updateDiscountDisplay('#Tax');
     });
 
     // For edit booking form
     $('#EditTax').on('change', function() {
-        updateDiscountDisplay('#EditTax', '#EditDiscountDisplay');
-        calculateEditBooking();
+        updateDiscountDisplay('#EditTax');
+        // Update the last selected discount when changed in edit form
+        // Store as percentage value (e.g., 20 for 20%)
+        const selectedRate = parseFloat($(this).val() || 0);
+        $('#LastSelectedDiscount').val(selectedRate);
     });
 
     // When editing a booking, also update the discount display
@@ -815,17 +893,64 @@ $(document).ready(function(){
             type: "GET",
             url: "/booking/" + id + "/edit",
             success: function(response) {
-                // ... existing code ...
-                
-                // Convert the decimal tax to percentage and set the select value
-                const taxPercent = response.booking.Tax * 100;
-                $('#EditTax').val(taxPercent);
-                updateDiscountDisplay('#EditTax', '#EditDiscountDisplay');
-                
-                calculateEditBooking();
+                if (response.booking) {
+                    // Set basic fields
+                    $('#IDEdit').val(response.booking.id);
+                    $('#EditRoom').val(response.booking.RoomID);
+                    $('#EditGuest').val(response.booking.GuestID);
+                    $('#EditIdType').val(response.booking.IdType);
+                    $('#EditIdNumber').val(response.booking.IdNumber);
+                    $('#EditCategory').val(response.booking.Category);
+                    $('#EditStatus').val(response.booking.Status);
+                    $('#EditCheckInDate').val(response.booking.CheckInDate);
+                    $('#EditCheckOutDate').val(response.booking.CheckOutDate);
+                    $('#EditAddOns').val(response.booking.AddOns);
+                    $('#EditPaymentMode').val(response.booking.ModeOfPayment);
+                    $('#EditRefNo').val(response.booking.RefNo);
+                    
+                    // Set Tax/Discount
+                    var discountValue = response.booking.LastSelectedDiscount || response.booking.Tax;
+                    var $taxSelect = $('#EditTax');
+
+                    // Debug log
+                    console.log('Discount value from server:', discountValue);
+                    console.log('Available options:', Array.from($taxSelect[0].options).map(opt => ({ value: opt.value, text: opt.text })));
+
+                    // Find matching option by comparing the numeric values
+                    var matchingOption = Array.from($taxSelect[0].options).find(option => {
+                        // Convert both values to numbers for comparison
+                        var optionValue = parseFloat(option.value);
+                        var targetValue = parseFloat(discountValue);
+                        return optionValue === targetValue;
+                    });
+
+                    if (matchingOption) {
+                        // Select the matching option
+                        $taxSelect.val(matchingOption.value);
+                        console.log('Selected option:', matchingOption.text);
+                    } else {
+                        // If no match found, default to "No Discount"
+                        $taxSelect.val('0');
+                        console.log('No matching option found, defaulting to 0');
+                    }
+
+                    // Store the value in the hidden input
+                    $('#LastSelectedDiscount').val(discountValue);
+                    
+                    // Debug log
+                    console.log('Final selected value:', $taxSelect.val());
+                    console.log('Final selected text:', $taxSelect.find('option:selected').text());
+                } else {
+                    console.error('No booking data in response');
+                }
             },
             error: function(error) {
                 console.error('Error fetching booking:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to fetch booking details. Please try again.'
+                });
             }
         });
     });
@@ -1050,6 +1175,274 @@ $(document).ready(function(){
         BookingList.ajax.reload();
     });
 
+    // Add event listener for PaymentMode change
+    $('#PaymentMode').on('change', function() {
+        if ($(this).val() === 'gcash') {
+            $('#GcashRefContainer').show();
+        } else {
+            $('#GcashRefContainer').hide();
+        }
+    });
+
+    // Remove any existing EditPaymentMode change handlers
+    $('#EditPaymentMode').off('change');
+
+    // Add the consolidated EditPaymentMode change handler
+    $('#EditPaymentMode').on('change', function() {
+        const refContainer = $('#EditGcashRefContainer');
+        const refNo = $('#EditRefNo');
+        const refLabel = $('label[for="EditRefNo"]');
+        const currentMode = this.value;
+        const previousMode = $(this).data('previous-mode');
+        
+        // Store current reference number before changing
+        if (previousMode === 'gcash' || previousMode === 'bank') {
+            storedRefs[previousMode] = refNo.val() || storedRefs[previousMode];
+        }
+        
+        // Update previous mode
+        $(this).data('previous-mode', currentMode);
+        
+        if (currentMode === 'gcash' || currentMode === 'bank') {
+            refContainer.show();
+            refNo.prop('required', true);
+            
+            // Set appropriate label text
+            const labelText = currentMode === 'gcash' ? 'GCash Reference Number:' : 'Bank Reference Number:';
+            refLabel.html(labelText + ' <span class="text-danger">*</span>');
+            
+            // Restore the stored reference number for this mode
+            refNo.val(storedRefs[currentMode]);
+        } else {
+            // If switching to cash, hide container and clear field but keep stored refs
+            refContainer.hide();
+            refNo.prop('required', false);
+            refNo.val('');
+        }
+    });
+
+    // Update modal reset handler
+    $('#EditBookingModal').on('hidden.bs.modal', function () {
+        // Clear stored references when modal is closed
+        storedRefs = {
+            gcash: '',
+            bank: ''
+        };
+        $('#EditPaymentMode').removeData('previous-mode');
+        resetEditModal();
+    });
+
+    // Remove duplicate event handlers
+    $('#EditPaymentMode').off('change.paymentMode');
+    $('#PaymentMode').off('change.paymentMode');
+
+    // Add this function to handle modal reset
+    function resetEditModal() {
+        $('#UpdateBtn').prop('disabled', true);
+        // Optional: Reset form fields if needed
+        $('#EditBookingForm')[0].reset();
+    }
+
+    // Modify your existing modal show event handler
+    $('#EditBookingModal').on('show.bs.modal', function () {
+        $('#UpdateBtn').prop('disabled', true);
+        // ... rest of your existing modal show code ...
+    });
+
+    // Modify your existing modal hide event handler
+    $('#EditBookingModal').on('hide.bs.modal', function () {
+        resetEditModal();
+    });
+
+    function formatStatus(status) {
+        if (!status) return '';
+        status = status.toLowerCase();
+        return `<span class="status-badge ${status}">${status}</span>`;
+    }
+
+    // Payment Mode Handling for New Booking
+    $('#PaymentMode').on('change', function() {
+        const refContainer = $('#GcashRefContainer');
+        const refNo = $('#RefNo');
+        const refLabel = $('label[for="RefNo"]');
+        
+        if (this.value === 'gcash' || this.value === 'bank') {
+            refContainer.show();
+            refNo.prop('required', true);
+            // Update label based on payment mode
+            const labelText = this.value === 'gcash' ? 'GCash Reference Number:' : 'Bank Reference Number:';
+            refLabel.html(labelText + ' <span class="text-danger">*</span>');
+        } else {
+            refContainer.hide();
+            refNo.prop('required', false);
+            refNo.val('');
+        }
+    });
+
+    // Payment Mode Handling for Edit Form
+    $('#EditPaymentMode').on('change', function() {
+        const refContainer = $('#EditGcashRefContainer');
+        const refNo = $('#EditRefNo');
+        const refLabel = $('label[for="EditRefNo"]');
+        
+        if (this.value === 'gcash' || this.value === 'bank') {
+            refContainer.show();
+            refNo.prop('required', true);
+            // Update label based on payment mode
+            const labelText = this.value === 'gcash' ? 'GCash Reference Number:' : 'Bank Reference Number:';
+            refLabel.html(labelText + ' <span class="text-danger">*</span>');
+        } else {
+            refContainer.hide();
+            refNo.prop('required', false);
+            refNo.val('');
+        }
+    });
+
+    // Add to your reset functions
+    function resetForms() {
+        $('#GcashRefContainer, #EditGcashRefContainer').hide();
+        $('#RefNo, #EditRefNo').val('').prop('required', false);
+        $('#PaymentMode, #EditPaymentMode').val('');
+    }
+
+    // Call resetForms when closing modals
+    $('#NewBookingModal, #EditBookingModal').on('hidden.bs.modal', resetForms);
+
+    // Add reset handler for edit modal close
+    $('#EditBookingModal').on('hidden.bs.modal', function () {
+        // Clear stored references when modal is closed
+        storedRefs = {
+            gcash: '',
+            bank: ''
+        };
+        $('#EditPaymentMode').removeData('previous-mode');
+    });
+
+    function fetchBookingData(id) {
+        $.ajax({
+            type: "GET",
+            url: "/booking/" + id + "/edit",
+            success: function(response) {
+                // Set other fields...
+                
+                // Set room and dates first
+                $('#EditRoom').val(response.booking.RoomID);
+                $('#EditCheckInDate').val(response.booking.CheckInDate);
+                $('#EditCheckOutDate').val(response.booking.CheckOutDate);
+                $('#EditAddOns').val(response.booking.AddOns);
+                
+                // Calculate all booking details including subtotal
+                calculateEditBooking();
+                
+                // If you have subtotal directly from the server, you can set it directly
+                if (response.booking.SubTotal) {
+                    $('#EditSubTotal').val(parseFloat(response.booking.SubTotal).toFixed(2));
+                }
+                
+                $('#EditBookingModal').modal('show');
+            },
+            error: function(xhr) {
+                console.error('Error fetching booking:', xhr);
+                Swal.fire('Error!', 'Failed to load booking data', 'error');
+            }
+        });
+    }
+
+    // Add these event listeners
+    $('#EditRoom, #EditCheckInDate, #EditCheckOutDate, #EditAddOns').on('change', function() {
+        calculateEditBooking();
+    });
+
+    // Add this at the start of your script
+    let calculationInterval;
+
+    function startCalculationInterval() {
+        // Clear any existing interval first
+        if (calculationInterval) {
+            clearInterval(calculationInterval);
+        }
+        
+        // Set new interval to calculate every second
+        calculationInterval = setInterval(calculateEditBooking, 1000);
+    }
+
+    function calculateEditBooking() {
+        try {
+            var checkIn = new Date($('#EditCheckInDate').val());
+            var checkOut = new Date($('#EditCheckOutDate').val());
+            
+            if (checkIn && checkOut && !isNaN(checkIn) && !isNaN(checkOut)) {
+                // Calculate number of days
+                var timeDiff = checkOut.getTime() - checkIn.getTime();
+                var numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                $('#EditNumberOfDays').val(numberOfDays);
+                
+                // Get room price
+                var roomPrice = parseFloat($('#EditRoom option:selected').data('price') || 0);
+                
+                // Calculate add-ons
+                var addOnPrice = 0;
+                var addOns = $('#EditAddOns').val();
+                if (addOns === 'bed') {
+                    addOnPrice = 500;
+                } else if (addOns === 'breakfast') {
+                    addOnPrice = 300;
+                }
+                
+                // Calculate subtotal
+                var subtotal = (numberOfDays * roomPrice) + addOnPrice;
+                $('#EditSubTotal').val(subtotal.toFixed(2));
+                
+                // Get the discount value from the select element (already in percentage)
+                var discountRate = parseFloat($('#EditTax').val() || 0);
+                var discountAmount = (discountRate / 100) * subtotal;
+                $('#EditDiscountAmount').val(discountAmount.toFixed(2));
+                
+                // Calculate total price
+                var totalPrice = subtotal - discountAmount;
+                $('#EditTotalPrice').val(totalPrice.toFixed(2));
+                
+                // Update total balance based on amount paid
+                var amountPaid = parseFloat($('#EditAmountPaid').val() || 0);
+                var totalBalance = totalPrice - amountPaid;
+                $('#EditTotalBalance').val(totalBalance.toFixed(2));
+            }
+        } catch (error) {
+            console.error('Error in calculateEditBooking:', error);
+        }
+    }
+
+    // Start calculation when modal is shown
+    $('#EditBookingModal').on('shown.bs.modal', function() {
+        startCalculationInterval();
+    });
+
+    // Stop calculation when modal is hidden
+    $('#EditBookingModal').on('hidden.bs.modal', function() {
+        if (calculationInterval) {
+            clearInterval(calculationInterval);
+        }
+    });
+
+    // Update fetchBookingData to start the interval
+    function fetchBookingData(id) {
+        $.ajax({
+            type: "GET",
+            url: "/booking/" + id + "/edit",
+            success: function(response) {
+                // Set all your existing fields...
+                
+                $('#EditBookingModal').modal('show');
+                // Start the calculation interval after setting the data
+                startCalculationInterval();
+            },
+            error: function(xhr) {
+                console.error('Error fetching booking:', xhr);
+                Swal.fire('Error!', 'Failed to load booking data', 'error');
+            }
+        });
+    }
+
 });
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1160,12 +1553,12 @@ function updateTotalPrice() {
     $('#EditNumberOfDays').val(numberOfDays);
 
     var roomPrice = parseFloat($('#EditRoom option:selected').data('price') || 0);
-    var totalPrice = numberOfDays * roomPrice;
-    $('#EditTotalPrice').val(totalPrice.toFixed(2));
+    var totalDaysPrice = numberOfDays * roomPrice;
+    $('#EditTotalPrice').val(totalDaysPrice.toFixed(2));
     
     // Update balance
     var amountPaid = parseFloat($('#EditAmountPaid').val() || 0);
-    var totalBalance = totalPrice - amountPaid;
+    var totalBalance = totalDaysPrice - amountPaid;
     $('#EditTotalBalance').val(totalBalance.toFixed(2));
 }
 
@@ -1522,8 +1915,11 @@ document.addEventListener('DOMContentLoaded', function() {
 async function fetchRoomStatus(roomId, year, month) {
     try {
         const response = await fetch(`/api/room-status/${roomId}/${year}/${month}`);
-        if (!response.ok) throw new Error('Failed to fetch room status');
-        return await response.json();
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
     } catch (error) {
         console.error('Error fetching room status:', error);
         return {};
@@ -1535,61 +1931,67 @@ async function generateCalendar(roomId, date = currentDate) {
     const calendarBody = document.querySelector(`#room-calendar-${roomId} .calendar-body`);
     if (!calendarBody) return;
 
-    const currentMonth = date.getMonth();
-    const currentYear = date.getFullYear();
-    
-    // Update month display
-    const monthDisplay = document.getElementById('currentMonth');
-    monthDisplay.textContent = new Intl.DateTimeFormat('en-US', { 
-        month: 'long', 
-        year: 'numeric' 
-    }).format(date);
-    
-    // Fetch room status for the month
-    const roomStatus = await fetchRoomStatus(roomId, currentYear, currentMonth + 1);
-    
-    // Get first day of month
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    const lastDay = new Date(currentYear, currentMonth + 1, 0);
-    
-    let html = '';
-    let dateNum = 1;
-    
-    // Create calendar rows
-    for (let i = 0; i < 6; i++) {
-        html += '<tr>';
+    try {
+        const currentMonth = date.getMonth();
+        const currentYear = date.getFullYear();
         
-        // Create calendar cells
-        for (let j = 0; j < 7; j++) {
-            if (i === 0 && j < firstDay.getDay()) {
-                html += '<td></td>';
-            } else if (dateNum > lastDay.getDate()) {
-                html += '<td></td>';
-            } else {
-                const currentDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dateNum).padStart(2, '0')}`;
-                const status = roomStatus[currentDate] || 'available';
-                const isToday = isCurrentDay(dateNum, date) ? 'today' : '';
-                
-                html += `
-                    <td class="calendar-day ${status} ${isToday}">
-                        <div class="date">${dateNum}</div>
-                        <div class="booking-status">
-                            ${getStatusDisplay(status)}
-                        </div>
-                        <div class="events" id="events-${roomId}-${dateNum}"></div>
-                    </td>
-                `;
-                dateNum++;
+        // Update month display
+        const monthDisplay = document.getElementById('currentMonth');
+        if (monthDisplay) {
+            monthDisplay.textContent = new Intl.DateTimeFormat('en-US', { 
+                month: 'long', 
+                year: 'numeric' 
+            }).format(date);
+        }
+        
+        // Fetch room status for the month
+        const roomStatus = await fetchRoomStatus(roomId, currentYear, currentMonth + 1);
+        
+        // Get first day of month
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth + 1, 0);
+        
+        let html = '';
+        let dateNum = 1;
+        
+        // Create calendar rows
+        for (let i = 0; i < 6; i++) {
+            html += '<tr>';
+            
+            // Create calendar cells
+            for (let j = 0; j < 7; j++) {
+                if (i === 0 && j < firstDay.getDay()) {
+                    html += '<td></td>';
+                } else if (dateNum > lastDay.getDate()) {
+                    html += '<td></td>';
+                } else {
+                    const currentDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dateNum).padStart(2, '0')}`;
+                    const status = roomStatus[currentDate] || 'available';
+                    const isToday = isCurrentDay(dateNum, date) ? 'today' : '';
+                    
+                    html += `
+                        <td class="calendar-day ${status} ${isToday}">
+                            <div class="date">${dateNum}</div>
+                            <div class="booking-status">
+                                ${getStatusDisplay(status)}
+                            </div>
+                        </td>
+                    `;
+                    dateNum++;
+                }
+            }
+            html += '</tr>';
+            
+            if (dateNum > lastDay.getDate()) {
+                break;
             }
         }
-        html += '</tr>';
         
-        if (dateNum > lastDay.getDate()) {
-            break;
-        }
+        calendarBody.innerHTML = html;
+    } catch (error) {
+        console.error('Error generating calendar:', error);
+        calendarBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error loading calendar. Please try again.</td></tr>';
     }
-    
-    calendarBody.innerHTML = html;
 }
 
 // Helper function to display status
@@ -1737,55 +2139,108 @@ $('#Tax').on('change', function() {
 // When edit button is clicked
 $(document).on('click', '.EditBtn', function(e) {
     e.preventDefault();
-    var id = $(this).val();
+    var id = $(this).data('id');
     
     $.ajax({
         type: "GET",
-        url: "/booking/" + id + "/edit",
-        success: function(response) {
-            if (response.booking) {
-                // Set basic fields
-                $('#IDEdit').val(response.booking.id);
-                $('#EditRoom').val(response.booking.RoomID);
-                $('#EditGuest').val(response.booking.GuestID);
-                $('#EditCategory').val(response.booking.Category);
-                $('#EditStatus').val(response.booking.Status);
-                $('#EditPaymentMode').val(response.booking.ModeOfPayment);
-                $('#EditRefNo').val(response.booking.RefNo);
-                $('#EditCheckInDate').val(response.booking.CheckInDate);
-                $('#EditCheckOutDate').val(response.booking.CheckOutDate);
+        url: "/booking/" + id,
+        success: function(data) {
+            // Reset form
+            $('#EditBookingForm')[0].reset();
+            
+            // Set basic fields
+            $('#IDEdit').val(data.id);
+            $('#EditRoom').val(data.RoomID).trigger('change');
+            $('#EditGuest').val(data.GuestID);
+            $('#EditCategory').val(data.Category);
+            $('#EditStatus').val(data.Status);
+            $('#EditAddOns').val(data.AddOns);
+            
+            // Handle payment mode and reference number
+            $('#EditPaymentMode').val(data.ModeOfPayment).data('previous-mode', data.ModeOfPayment);
+            const refContainer = $('#EditGcashRefContainer');
+            const refNoInput = $('#EditRefNo');
+            const refNoLabel = $('label[for="EditRefNo"]');
+            
+            if (data.ModeOfPayment === 'gcash' || data.ModeOfPayment === 'bank') {
+                refContainer.show();
+                refNoInput.val(data.RefNo);
+                refNoInput.prop('required', true);
                 
-                // Set AddOns
-                $('#EditAddOns').val(response.booking.AddOns);
-                
-                // Set Tax/Discount - Convert from decimal to percentage if needed
-                var taxValue = parseFloat(response.booking.Tax);
-                if (taxValue < 1) {
-                    taxValue = taxValue * 100;
-                }
-                $('#EditTax').val(taxValue);
-                
-                // Set other pricing fields
-                $('#EditNumberOfDays').val(response.booking.NumberOfDays);
-                $('#EditSubTotal').val(parseFloat(response.booking.SubTotal).toFixed(2));
-                $('#EditDiscountAmount').val(parseFloat(response.booking.DiscountAmount).toFixed(2));
-                $('#EditTotalPrice').val(parseFloat(response.booking.TotalPrice).toFixed(2));
-                $('#EditAmountPaid').val(parseFloat(response.booking.AmountPaid).toFixed(2));
-                $('#EditTotalBalance').val(parseFloat(response.booking.TotalBalance).toFixed(2));
-                
-                // Debug logs
-                console.log('Response:', response.booking);
-                console.log('Tax value from DB:', response.booking.Tax);
-                console.log('Converted tax value:', taxValue);
-                console.log('Selected tax value:', $('#EditTax').val());
-                
-                // Show modal
-                $('#EditBookingModal').modal('show');
+                const labelText = data.ModeOfPayment === 'gcash' ? 
+                    'GCash Reference Number: ' : 
+                    'Bank Reference Number: ';
+                refNoLabel.html(labelText + '<span class="text-danger">*</span>');
+            } else {
+                refContainer.hide();
+                refNoInput.val('').prop('required', false);
             }
+            
+            // Set Tax/Discount
+            var discountValue = data.LastSelectedDiscount || data.Tax;
+            var $taxSelect = $('#EditTax');
+            
+            // Convert discount value to percentage if it's in decimal
+            if (discountValue < 1) {
+                discountValue = discountValue * 100;
+            }
+            
+            // Find the matching option
+            var $options = $taxSelect.find('option');
+            var matchFound = false;
+            
+            $options.each(function() {
+                var optionValue = parseFloat($(this).val());
+                if (Math.abs(optionValue - discountValue) < 0.01) {
+                    matchFound = true;
+                    $taxSelect.val(optionValue);
+                    // Update option text if we have tax name
+                    if (data.TaxName) {
+                        $(this).text(data.TaxName + ' (' + optionValue + '%)');
+                    }
+                    return false; // Break the loop
+                }
+            });
+            
+            if (!matchFound) {
+                $taxSelect.val('0'); // Default to no discount
+            }
+            
+            // Store the last selected discount
+            $('#LastSelectedDiscount').val(discountValue);
+            
+            // Set other fields
+            $('#EditAmountPaid').val(data.AmountPaid);
+            $('#EditNumberOfDays').val(data.NumberOfDays);
+            $('#EditTotalPrice').val(data.TotalPrice);
+            $('#EditTotalBalance').val(data.TotalBalance);
+            $('#EditIdType').val(data.IdType);
+            $('#EditIdNumber').val(data.IdNumber);
+
+            // Format dates
+            if (data.CheckInDate) {
+                $('#EditCheckInDate').val(moment(data.CheckInDate).format('YYYY-MM-DDTHH:mm'));
+            }
+            if (data.CheckOutDate) {
+                $('#EditCheckOutDate').val(moment(data.CheckOutDate).format('YYYY-MM-DDTHH:mm'));
+            }
+
+            // Enable update button
+            $('#UpdateBtn').prop('disabled', false);
+
+            // Show the modal
+            $('#EditBookingModal').modal('show');
+            
+            // Trigger calculations
+            calculateEditBooking();
         },
-        error: function(xhr) {
-            console.error('Error fetching booking details:', xhr);
-            Swal.fire('Error', 'Unable to fetch booking details', 'error');
+        error: function(error) {
+            console.error('Error fetching booking:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to fetch booking details'
+            });
         }
     });
 });
@@ -1799,7 +2254,7 @@ function calculateBooking() {
         
         if (checkIn && checkOut && !isNaN(checkIn) && !isNaN(checkOut)) {
             // Calculate number of days
-    var timeDiff = checkOut.getTime() - checkIn.getTime();
+            var timeDiff = checkOut.getTime() - checkIn.getTime();
             var numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
             $('#NumberOfDays').val(numberOfDays);
             
@@ -1819,7 +2274,7 @@ function calculateBooking() {
             var subtotal = (numberOfDays * roomPrice) + addOnPrice;
             $('#SubTotal').val(subtotal.toFixed(2));
             
-            // Calculate discount
+            // Calculate discount - Now the Tax value is already in percentage (e.g. 20 for 20%)
             var discountRate = parseFloat($('#Tax').val() || 0);
             var discountAmount = (discountRate / 100) * subtotal;
             $('#DiscountAmount').val(discountAmount.toFixed(2));
@@ -1841,18 +2296,17 @@ function calculateBooking() {
 // Function to calculate booking details for edit booking
 function calculateEditBooking() {
     try {
-        // Get check-in and check-out dates
-    var checkIn = new Date($('#EditCheckInDate').val());
-    var checkOut = new Date($('#EditCheckOutDate').val());
+        var checkIn = new Date($('#EditCheckInDate').val());
+        var checkOut = new Date($('#EditCheckOutDate').val());
         
         if (checkIn && checkOut && !isNaN(checkIn) && !isNaN(checkOut)) {
             // Calculate number of days
             var timeDiff = checkOut.getTime() - checkIn.getTime();
             var numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
-    $('#EditNumberOfDays').val(numberOfDays);
-
+            $('#EditNumberOfDays').val(numberOfDays);
+            
             // Get room price
-    var roomPrice = parseFloat($('#EditRoom option:selected').data('price') || 0);
+            var roomPrice = parseFloat($('#EditRoom option:selected').data('price') || 0);
             
             // Calculate add-ons
             var addOnPrice = 0;
@@ -1867,24 +2321,29 @@ function calculateEditBooking() {
             var subtotal = (numberOfDays * roomPrice) + addOnPrice;
             $('#EditSubTotal').val(subtotal.toFixed(2));
             
-            // Calculate discount
+            // Get the discount value from the select element (already in percentage)
             var discountRate = parseFloat($('#EditTax').val() || 0);
             var discountAmount = (discountRate / 100) * subtotal;
             $('#EditDiscountAmount').val(discountAmount.toFixed(2));
             
             // Calculate total price
             var totalPrice = subtotal - discountAmount;
-    $('#EditTotalPrice').val(totalPrice.toFixed(2));
-    
+            $('#EditTotalPrice').val(totalPrice.toFixed(2));
+            
             // Update total balance based on amount paid
-    var amountPaid = parseFloat($('#EditAmountPaid').val() || 0);
-    var totalBalance = totalPrice - amountPaid;
-    $('#EditTotalBalance').val(totalBalance.toFixed(2));
+            var amountPaid = parseFloat($('#EditAmountPaid').val() || 0);
+            var totalBalance = totalPrice - amountPaid;
+            $('#EditTotalBalance').val(totalBalance.toFixed(2));
         }
     } catch (error) {
         console.error('Error in calculateEditBooking:', error);
     }
 }
+
+// Add event listeners for all fields that affect the calculation
+$('#EditCheckInDate, #EditCheckOutDate, #EditRoom, #EditAddOns, #EditTax, #EditAmountPaid').on('change input', function() {
+    calculateEditBooking();
+});
 
 // Event listeners for new booking
 $('#CheckInDate, #CheckOutDate, #AddOns, #Tax, #AmountPaid').on('change', calculateBooking);
@@ -1907,24 +2366,114 @@ $(document).on('click', '.EditBtn', function() {
         type: "GET",
         url: "/booking/" + id + "/edit",
         success: function(response) {
-            $('#IDEdit').val(response.booking.id);
-            $('#EditRoom').val(response.booking.RoomID);
-            $('#EditGuest').val(response.booking.GuestID);
-            $('#EditCategory').val(response.booking.Category);
-            $('#EditStatus').val(response.booking.Status);
-            $('#EditCheckInDate').val(response.booking.CheckInDate);
-            $('#EditCheckOutDate').val(response.booking.CheckOutDate);
-            $('#EditAddOns').val(response.booking.AddOns);
-            $('#EditTax').val(response.booking.Tax * 100); // Convert decimal to percentage
-            $('#EditAmountPaid').val(response.booking.AmountPaid);
-            
-            calculateEditBooking();
+            if (response.booking) {
+                // Set basic fields
+                $('#IDEdit').val(response.booking.id);
+                $('#EditRoom').val(response.booking.RoomID);
+                $('#EditGuest').val(response.booking.GuestID);
+                $('#EditIdType').val(response.booking.IdType);
+                $('#EditIdNumber').val(response.booking.IdNumber);
+                $('#EditCategory').val(response.booking.Category);
+                $('#EditStatus').val(response.booking.Status);
+                $('#EditCheckInDate').val(response.booking.CheckInDate);
+                $('#EditCheckOutDate').val(response.booking.CheckOutDate);
+                $('#EditAddOns').val(response.booking.AddOns);
+                $('#EditPaymentMode').val(response.booking.ModeOfPayment);
+                $('#EditRefNo').val(response.booking.RefNo);
+                
+                // Set Tax/Discount
+                var discountValue = response.booking.LastSelectedDiscount || response.booking.Tax;
+                var $taxSelect = $('#EditTax');
+
+                // Debug log
+                console.log('Discount value from server:', discountValue);
+                console.log('Available options:', Array.from($taxSelect[0].options).map(opt => ({ value: opt.value, text: opt.text })));
+
+                // Find matching option by comparing the numeric values
+                var matchingOption = Array.from($taxSelect[0].options).find(option => {
+                    // Convert both values to numbers for comparison
+                    var optionValue = parseFloat(option.value);
+                    var targetValue = parseFloat(discountValue);
+                    return optionValue === targetValue;
+                });
+
+                if (matchingOption) {
+                    // Select the matching option
+                    $taxSelect.val(matchingOption.value);
+                    console.log('Selected option:', matchingOption.text);
+                } else {
+                    // If no match found, default to "No Discount"
+                    $taxSelect.val('0');
+                    console.log('No matching option found, defaulting to 0');
+                }
+
+                // Store the value in the hidden input
+                $('#LastSelectedDiscount').val(discountValue);
+                
+                // Debug log
+                console.log('Final selected value:', $taxSelect.val());
+                console.log('Final selected text:', $taxSelect.find('option:selected').text());
+            } else {
+                console.error('No booking data in response');
+            }
         },
         error: function(error) {
             console.error('Error fetching booking:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to fetch booking details. Please try again.'
+            });
         }
     });
 });
+
+// Update the calculation function to handle the discount correctly
+function calculateEditBooking() {
+    try {
+        var checkIn = new Date($('#EditCheckInDate').val());
+        var checkOut = new Date($('#EditCheckOutDate').val());
+        
+        if (checkIn && checkOut && !isNaN(checkIn) && !isNaN(checkOut)) {
+            // Calculate number of days
+            var timeDiff = checkOut.getTime() - checkIn.getTime();
+            var numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            $('#EditNumberOfDays').val(numberOfDays);
+            
+            // Get room price
+            var roomPrice = parseFloat($('#EditRoom option:selected').data('price') || 0);
+            
+            // Calculate add-ons
+            var addOnPrice = 0;
+            var addOns = $('#EditAddOns').val();
+            if (addOns === 'bed') {
+                addOnPrice = 500;
+            } else if (addOns === 'breakfast') {
+                addOnPrice = 300;
+            }
+            
+            // Calculate subtotal
+            var subtotal = (numberOfDays * roomPrice) + addOnPrice;
+            $('#EditSubTotal').val(subtotal.toFixed(2));
+            
+            // Get the discount value from the select element (already in percentage)
+            var discountRate = parseFloat($('#EditTax').val() || 0);
+            var discountAmount = (discountRate / 100) * subtotal;
+            $('#EditDiscountAmount').val(discountAmount.toFixed(2));
+            
+            // Calculate total price
+            var totalPrice = subtotal - discountAmount;
+            $('#EditTotalPrice').val(totalPrice.toFixed(2));
+            
+            // Update total balance based on amount paid
+            var amountPaid = parseFloat($('#EditAmountPaid').val() || 0);
+            var totalBalance = totalPrice - amountPaid;
+            $('#EditTotalBalance').val(totalBalance.toFixed(2));
+        }
+    } catch (error) {
+        console.error('Error in calculateEditBooking:', error);
+    }
+}
 
 // Add this to your existing EditBtn click handler
 $('#EditStatus').on('change', function() {
@@ -1988,3 +2537,48 @@ $('#EditBookingModal').on('show.bs.modal', function () {
 $('#EditBookingModal').on('hide.bs.modal', function () {
     resetEditModal();
 });
+
+function formatStatus(status) {
+    if (!status) return '';
+    status = status.toLowerCase();
+    return `<span class="status-badge ${status}">${status}</span>`;
+}
+// Remove the span tag and modify the discount selection logic
+function updateDiscountDisplay(selectElement) {
+    const selectedOption = $(selectElement).find('option:selected');
+    const discountRate = parseFloat(selectedOption.val() || 0);
+    
+    // Store the last selected discount in a hidden input
+    // The discount is stored as a percentage value (e.g., 20 for 20%)
+    if (selectElement === '#EditTax') {
+        $('#LastSelectedDiscount').val(discountRate);
+    }
+    
+    calculateBooking();
+}
+
+// For new booking form
+$('#Tax').on('change', function() {
+    updateDiscountDisplay('#Tax');
+});
+
+// For edit booking form
+$('#EditTax').on('change', function() {
+    updateDiscountDisplay('#EditTax');
+    // Update the last selected discount when changed in edit form
+    // Store as percentage value (e.g., 20 for 20%)
+    const selectedRate = parseFloat($(this).val() || 0);
+    $('#LastSelectedDiscount').val(selectedRate);
+});
+
+// Add this to the edit button click handler
+// ... existing code ...
+// Set Tax/Discount
+// The data.LastSelectedDiscount is already in percentage form (e.g., 20 for 20%)
+var discountValue = data.LastSelectedDiscount || data.Tax;
+$('#EditTax').val(discountValue);
+$('#LastSelectedDiscount').val(discountValue);
+// Make sure to trigger change to update the display
+$('#EditTax').trigger('change');
+// ... existing code ...
+

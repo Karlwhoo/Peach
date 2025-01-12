@@ -13,13 +13,15 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('payment_settings', function (Blueprint $table) {
-            $table->id();
-            $table->string('account_name', 255);
-            $table->string('number', 255);
-            $table->mediumText('qr_image');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('payment_settings')) {
+            Schema::create('payment_settings', function (Blueprint $table) {
+                $table->id();
+                $table->string('account_name');
+                $table->string('number');
+                $table->mediumText('qr_image');
+                $table->timestamps();
+            });
+        }
     }
 
     /**

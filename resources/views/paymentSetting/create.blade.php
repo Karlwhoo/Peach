@@ -2,125 +2,147 @@
 
 @section('content')
 <div class="container-fluid">
-    <!-- Marquee Note -->
-    <div class="alert alert-info" role="alert">
-        <marquee behavior="scroll" direction="left" style="color: #004085;">
-            <i class="fas fa-info-circle"></i> Important Note: Only one payment account can be set. This will be the account guests will use for payments.
-        </marquee>
-    </div>
-
-    @if($paymentSettings->isEmpty())
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Payment Settings</h3>
-            </div>
-            @if(session('success'))
-                <div class="alert alert-success">
-                    {{ session('success') }}
-                </div>
-            @endif
-            <div class="card-body">
-                <form action="{{ route('paymentSetting.store') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <div class="form-group">
-                        <label for="account_name">Account Name</label>
-                        <input type="text" 
-                               class="form-control @error('account_name') is-invalid @enderror" 
-                               id="account_name" 
-                               name="account_name" 
-                               value="{{ old('account_name') }}"
-                               placeholder="Enter Account Name">
-                        @error('account_name')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="number">GCash Number</label>
-                        <input type="text" 
-                               class="form-control @error('number') is-invalid @enderror" 
-                               id="number" 
-                               name="number" 
-                               value="{{ old('number') }}"
-                               placeholder="Enter GCash Number">
-                        @error('number')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="qr_image">QR Code Image</label>
-                        <input type="file" 
-                               class="form-control-file @error('qr_image') is-invalid @enderror" 
-                               id="qr_image" 
-                               name="qr_image"
-                               accept="image/*">
-                        @error('qr_image')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">Save Settings</button>
-                </form>
-            </div>
-        </div>
-    @endif
-
-    <!-- Existing Payment Settings Table -->
-    <div class="card mt-4">
+    <!-- Payment Settings Instructions Card -->
+    <div class="card mb-4">
         <div class="card-header">
-            <h3 class="card-title">Existing Payment Settings</h3>
+            <h3 class="card-title">Payment Settings Instructions</h3>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped">
-                    <thead>
-                        <tr>
-                            <th>Account Name</th>
-                            <th>GCash Number</th>
-                            <th>QR Code</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($paymentSettings as $setting)
-                            <tr>
-                                <td>{{ $setting->account_name }}</td>
-                                <td>{{ $setting->number }}</td>
-                                <td>
-                                    @if($setting->qr_image)
-                                        <img src="data:image/png;base64,{{ base64_encode($setting->qr_image) }}" 
-                                             alt="QR Code" 
-                                             style="max-height: 50px;">
-                                    @else
-                                        No QR Code
-                                    @endif
-                                </td>
-                                <td>
-                                    <div class="btn-group" role="group" aria-label="Actions" style="gap: 5px;">
-                                        
-                                        <form action="{{ route('paymentSetting.destroy', $setting->id) }}" 
-                                              method="POST" 
-                                              style="display: inline-block;">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" 
-                                                    class="btn btn-sm btn-danger" 
-                                                    onclick="return confirm('Are you sure you want to delete this payment setting?')"
-                                                    title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-mobile-alt"></i> GCASH Settings</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check-circle text-success"></i> Upload a clear QR code image for easier transactions</li>
+                        <li><i class="fas fa-check-circle text-success"></i> Ensure the account name and number are correct</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h5><i class="fas fa-university"></i> Bank Transfer Settings</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check-circle text-success"></i> Provide complete bank account details</li>
+                        <li><i class="fas fa-check-circle text-success"></i> Include branch information for easier verification</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="alert alert-warning mt-3">
+                <h6><i class="fas fa-exclamation-triangle"></i> Important Notes:</h6>
+                <ul class="mb-0">
+                    <li>Only active payment methods will be shown to customers during checkout.</li>
+                    <li>You can add multiple accounts but make sure to keep only the necessary ones active.</li>
+                    <li>Keep your payment details up to date to ensure smooth transactions.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Settings Tabs -->
+    <div class="card">
+        <div class="card-header p-0">
+            <ul class="nav nav-tabs card-header-tabs">
+                <li class="nav-item flex-fill">
+                    <a class="nav-link active text-center py-3 text-navy" id="gcash-tab" data-toggle="tab" href="#gcash">
+                        <i class="fas fa-mobile-alt"></i> GCASH Settings
+                    </a>
+                </li>
+                <li class="nav-item flex-fill">
+                    <a class="nav-link text-center py-3 text-navy" id="bank-tab" data-toggle="tab" href="#bank">
+                        <i class="fas fa-university"></i> Bank Transfer Settings
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="card-body">
+            <div class="tab-content">
+                <!-- GCash Settings Tab -->
+                <div class="tab-pane fade show active" id="gcash">
+                    @if($gcashAccounts->isEmpty())
+                        <div class="card">
+                            <div class="card-body">
+                                <form id="addGcashForm" method="POST" action="{{ route('paymentSetting.store') }}" enctype="multipart/form-data">
+                                    @csrf
+                                    <div class="form-group">
+                                        <label for="account_name">Account Name</label>
+                                        <input type="text" class="form-control" id="account_name" name="account_name" required>
                                     </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="text-center">No payment settings found</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                                    <div class="form-group">
+                                        <label for="number">Account Number</label>
+                                        <input type="text" class="form-control" id="number" name="number" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="qr_image">QR Code</label>
+                                        <input type="file" class="form-control" id="qr_image" name="qr_image" accept="image/*" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Save GCash Account</button>
+                                </form>
+                            </div>
+                        </div>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Account Name</th>
+                                        <th>Account Number</th>
+                                        <th>QR Code</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($gcashAccounts as $account)
+                                        <tr>
+                                            <td>{{ $account->account_name }}</td>
+                                            <td>{{ $account->number }}</td>
+                                            <td>
+                                                @if($account->qr_image)
+                                                    <img src="data:image/png;base64,{{ base64_encode($account->qr_image) }}" 
+                                                         alt="QR Code" 
+                                                         style="max-width: 50px;">
+                                                @else
+                                                    No QR Code
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
+                                                <button class="btn btn-sm btn-danger delete-account d-flex align-items-center justify-content-center" 
+                                                        data-id="{{ $account->id }}" 
+                                                        style="margin: 0 auto; width: 32px; height: 32px;">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+                
+                <!-- Bank Transfer Settings Tab -->
+                <div class="tab-pane fade" id="bank">
+                    <div class="d-flex justify-content-end mb-3">
+                        <button class="btn btn-primary" id="addBankAccount">
+                            <i class="fas fa-plus"></i> ADD BANK ACCOUNT
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Bank Name</th>
+                                    <th>Account Name</th>
+                                    <th>Account Number</th>
+                                    <th>Branch</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Bank accounts will be listed here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

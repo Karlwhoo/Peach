@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="{{ URL::asset('css/bootstrap.min.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
@@ -217,7 +217,42 @@
                 font-size: 1.5rem;
             }
         }
+
+        .otp-input {
+            width: 45px;
+            height: 45px;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+        
+        .otp-input:focus {
+            border-color: var(--peach-primary);
+            box-shadow: 0 0 0 0.2rem rgba(255, 139, 94, 0.15);
+        }
+
+        .swal2-popup {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .swal2-title {
+            color: var(--peach-text) !important;
+        }
+
+        .swal2-confirm {
+            background: linear-gradient(45deg, var(--peach-primary), var(--peach-secondary)) !important;
+            border: none !important;
+            box-shadow: 0 4px 15px rgba(255, 139, 94, 0.3) !important;
+        }
+
+        .swal2-confirm:hover {
+            background: linear-gradient(45deg, var(--peach-secondary), var(--peach-primary)) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 139, 94, 0.4) !important;
+        }
     </style>
+
+    <!-- Add this in the head section after your other CSS links -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
@@ -331,7 +366,232 @@
     </div>
 
     <!-- Scripts -->
-    <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ mix('js/app.js') }}" defer></script>
+
+    <!-- OTP Modal -->
+    <div class="modal fade" id="otpModal" tabindex="-1" aria-labelledby="otpModalLabel" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="otpModalLabel">Email Verification</h5>
+                </div>
+                <div class="modal-body">
+                    <p class="text-center mb-4">Please enter the OTP code sent to your email</p>
+                    <form id="otpForm">
+                        <div class="d-flex justify-content-center gap-2 mb-4">
+                            <input type="text" class="form-control otp-input" maxlength="1" pattern="[0-9]" required>
+                            <input type="text" class="form-control otp-input" maxlength="1" pattern="[0-9]" required>
+                            <input type="text" class="form-control otp-input" maxlength="1" pattern="[0-9]" required>
+                            <input type="text" class="form-control otp-input" maxlength="1" pattern="[0-9]" required>
+                            <input type="text" class="form-control otp-input" maxlength="1" pattern="[0-9]" required>
+                            <input type="text" class="form-control otp-input" maxlength="1" pattern="[0-9]" required>
+                        </div>
+                        <input type="hidden" name="otp" id="otpValue">
+                        <button type="submit" class="btn btn-primary w-100">Verify OTP</button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <p class="mb-0">Didn't receive the code? 
+                            <a href="#" id="resendOtp">Resend OTP</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const registrationForm = document.querySelector('form.auth-form');
+        const otpInputs = document.querySelectorAll('.otp-input');
+        const otpForm = document.querySelector('#otpForm');
+        let otpModal;
+        
+        // Initialize the Bootstrap modal
+        otpModal = new bootstrap.Modal(document.getElementById('otpModal'), {
+            backdrop: 'static',
+            keyboard: false
+        });
+        
+        registrationForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const formData = new FormData(registrationForm);
+            
+            // Show loading state
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
+            submitButton.disabled = true;
+
+            fetch('{{ route("register.send-otp") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    password: formData.get('password'),
+                    password_confirmation: formData.get('password_confirmation')
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Verification Code Sent!',
+                        text: 'Please check your email for the verification code.',
+                        confirmButtonColor: '#FF8B5E'
+                    }).then(() => {
+                        otpModal.show();
+                        // Focus first OTP input
+                        document.querySelector('.otp-input').focus();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: data.message || 'Failed to send OTP. Please try again.',
+                        confirmButtonColor: '#FF8B5E'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'Failed to send OTP. Please try again.',
+                    confirmButtonColor: '#FF8B5E'
+                });
+            })
+            .finally(() => {
+                // Reset button state
+                submitButton.innerHTML = originalButtonText;
+                submitButton.disabled = false;
+            });
+        });
+
+        // Handle OTP input
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', function(e) {
+                if (e.target.value.length === 1) {
+                    if (index < otpInputs.length - 1) {
+                        otpInputs[index + 1].focus();
+                    }
+                }
+            });
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+        });
+
+        // Handle OTP form submission
+        otpForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const otpValue = Array.from(otpInputs).map(input => input.value).join('');
+            
+            // Show loading state
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Verifying...';
+            submitButton.disabled = true;
+
+            fetch('{{ route("register.verify-otp") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: document.querySelector('input[name="email"]').value,
+                    otp: otpValue
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    otpModal.hide();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Registration Successful!',
+                        text: 'Your account has been created successfully.',
+                        confirmButtonColor: '#FF8B5E',
+                        allowOutsideClick: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = '{{ route("login") }}';
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid Code',
+                        text: data.message || 'Invalid OTP. Please try again.',
+                        confirmButtonColor: '#FF8B5E'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'Failed to verify OTP. Please try again.',
+                    confirmButtonColor: '#FF8B5E'
+                });
+            })
+            .finally(() => {
+                // Reset button state
+                submitButton.innerHTML = originalButtonText;
+                submitButton.disabled = false;
+            });
+        });
+
+        // Handle resend OTP
+        document.getElementById('resendOtp').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(registrationForm);
+            fetch('{{ route("register.send-otp") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    password: formData.get('password'),
+                    password_confirmation: formData.get('password_confirmation')
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('OTP resent successfully!');
+                } else {
+                    alert(data.message || 'Failed to resend OTP. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to resend OTP. Please try again.');
+            });
+        });
+    });
+    </script>
 </body>
 </html>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PaymentSetting;
+use App\Models\BankAccount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -10,8 +11,8 @@ class PaymentSettingController extends Controller
 {
     public function create()
     {
-        $paymentSettings = PaymentSetting::all();
-        return view('paymentSetting.create', compact('paymentSettings'));
+        $gcashAccounts = PaymentSetting::all();
+        return view('paymentSetting.create', compact('gcashAccounts'));
     }
 
     public function store(Request $request)
@@ -64,8 +65,8 @@ class PaymentSettingController extends Controller
 
     public function index()
     {
-        $paymentSettings = PaymentSetting::all();
-        return view('paymentSetting.create', compact('paymentSettings'));
+        $gcashAccounts = PaymentSetting::all();
+        return view('paymentSetting.create', compact('gcashAccounts'));
     }
 
     public function edit(PaymentSetting $paymentSetting)
@@ -114,9 +115,83 @@ class PaymentSettingController extends Controller
     {
         try {
             $paymentSetting->delete();
-            return redirect()->back()->with('success', 'Payment setting deleted successfully');
+            return response()->json(['success' => true, 'message' => 'Payment setting deleted successfully']);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Error deleting payment setting');
+            return response()->json(['success' => false, 'message' => 'Error deleting payment setting'], 500);
+        }
+    }
+
+    public function storeBankAccount(Request $request)
+    {
+        $validated = $request->validate([
+            'bank_name' => 'required|string|max:255',
+            'account_name' => 'required|string|max:255',
+            'account_number' => 'required|string|max:255',
+            'branch' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $bankAccount = BankAccount::create([
+                'bank_name' => $request->bank_name,
+                'account_name' => $request->account_name,
+                'account_number' => $request->account_number,
+                'branch' => $request->branch,
+                'is_active' => true
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bank account added successfully',
+                'data' => $bankAccount
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error adding bank account: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getBankAccounts()
+    {
+        $bankAccounts = BankAccount::all();
+        return response()->json($bankAccounts);
+    }
+
+    public function deleteBankAccount($id)
+    {
+        try {
+            $bankAccount = BankAccount::findOrFail($id);
+            $bankAccount->delete();
+            return response()->json(['success' => true, 'message' => 'Bank account deleted successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Error deleting bank account'], 500);
+        }
+    }
+
+    public function updateBankAccount(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'bank_name' => 'required|string|max:255',
+            'account_name' => 'required|string|max:255',
+            'account_number' => 'required|string|max:255',
+            'branch' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $bankAccount = BankAccount::findOrFail($id);
+            $bankAccount->update($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bank account updated successfully',
+                'data' => $bankAccount
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating bank account: ' . $e->getMessage()
+            ], 500);
         }
     }
 } 

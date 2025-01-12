@@ -84,12 +84,17 @@ class BookingController extends Controller
             'NumberOfDays' => 'required|integer',
             'TotalPrice' => 'required|numeric',
             'TotalBalance' => 'required|numeric',
-            'ModeOfPayment' => 'nullable|in:cash,card,gcash',
-            'RefNo' => 'nullable'
+            'ModeOfPayment' => 'required|in:cash,gcash,bank',
+            'RefNo' => 'required_if:ModeOfPayment,gcash,bank',
+            'IdType' => 'required|string',
+            'IdNumber' => 'required|string'
         ]);
 
         try {
             DB::beginTransaction();
+            
+            // Store the Tax value as LastSelectedDiscount
+            $validated['LastSelectedDiscount'] = $validated['Tax'];
             
             // Create the booking
             $booking = Booking::create($validated);
@@ -137,41 +142,17 @@ class BookingController extends Controller
      */
     public function show($id)
     {
-        try {
-            $booking = Booking::with(['room', 'guest'])
-                ->select([
-                    'bookings.*',
-                    'rooms.RoomNo',
-                    'rooms.Price as RoomPrice',
-                    DB::raw("CONCAT(guests.Fname, ' ', guests.Mname, ' ', guests.Lname) as GuestName"),
-                    DB::raw('DATEDIFF(bookings.CheckOutDate, bookings.CheckInDate) as NumberOfDays'),
-                    DB::raw('(DATEDIFF(bookings.CheckOutDate, bookings.CheckInDate) * rooms.Price) as SubTotal'),
-                    DB::raw('((DATEDIFF(bookings.CheckOutDate, bookings.CheckInDate) * rooms.Price) * (bookings.Tax / 100)) as DiscountAmount')
-                ])
-                ->leftJoin('rooms', 'bookings.RoomID', '=', 'rooms.id')
-                ->leftJoin('guests', 'bookings.GuestID', '=', 'guests.id')
-                ->where('bookings.id', $id)
-                ->firstOrFail();
-
-            return response()->json($booking);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Failed to fetch booking details',
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        $Booking = Booking::with(['room', 'guest']) // Ensure relationships are defined
-            ->findOrFail($id); // Use findOrFail to handle not found case
+        $Booking = Booking::with(['room', 'guest'])
+            ->select([
+                'bookings.*',
+                'tax_settings.Name as TaxName',
+                'tax_settings.Percent as TaxPercent'
+            ])
+            ->leftJoin('tax_settings', function($join) {
+                $join->on(DB::raw('tax_settings.Percent'), '=', DB::raw('bookings.LastSelectedDiscount'))
+                     ->whereNull('tax_settings.deleted_at');
+            })
+            ->findOrFail($id);
 
         return response()->json([
             'id' => $Booking->id,
@@ -184,6 +165,51 @@ class BookingController extends Controller
             'AddOns' => $Booking->AddOns,
             'AmountPaid' => $Booking->AmountPaid,
             'TotalBalance' => $Booking->TotalBalance,
+            'IdType' => $Booking->IdType,
+            'IdNumber' => $Booking->IdNumber,
+            'LastSelectedDiscount' => $Booking->LastSelectedDiscount,
+            'Tax' => $Booking->Tax,
+            'TaxName' => $Booking->TaxName,
+            'TaxPercent' => $Booking->TaxPercent,
+            'ModeOfPayment' => $Booking->ModeOfPayment,
+            'RefNo' => $Booking->RefNo
+        ]);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit($id)
+    {
+        $Booking = Booking::with(['room', 'guest'])
+            ->select([
+                'bookings.*',
+                'tax_settings.Name as TaxName'
+            ])
+            ->leftJoin('tax_settings', function($join) {
+                $join->on('tax_settings.Percent', '=', 'bookings.LastSelectedDiscount')
+                     ->whereNull('tax_settings.deleted_at');
+            })
+            ->findOrFail($id);
+
+        return response()->json([
+            'id' => $Booking->id,
+            'RoomID' => $Booking->RoomID,
+            'GuestID' => $Booking->GuestID,
+            'CheckInDate' => $Booking->CheckInDate,
+            'CheckOutDate' => $Booking->CheckOutDate,
+            'Category' => $Booking->Category,
+            'Status' => $Booking->Status,
+            'AddOns' => $Booking->AddOns,
+            'AmountPaid' => $Booking->AmountPaid,
+            'TotalBalance' => $Booking->TotalBalance,
+            'IdType' => $Booking->IdType,
+            'IdNumber' => $Booking->IdNumber,
+            'LastSelectedDiscount' => $Booking->LastSelectedDiscount,
+            'TaxName' => $Booking->TaxName,
         ]);
     }
 
@@ -198,50 +224,55 @@ class BookingController extends Controller
     {
         try {
             $booking = Booking::findOrFail($id);
-            
-            // Validate the request
+
             $validated = $request->validate([
-                'GuestID' => 'required|exists:guests,id',
                 'RoomID' => 'required|exists:rooms,id',
-                'Status' => 'required',
-                'AmountPaid' => 'required|numeric',
-                'TotalBalance' => 'required|numeric',
+                'GuestID' => 'required|exists:guests,id',
                 'CheckInDate' => 'required|date',
-                'CheckOutDate' => 'required|date',
-                'NumberOfDays' => 'required|numeric',
-                'TotalPrice' => 'required|numeric',
-                'Tax' => 'required|numeric',
-                'AddOns' => 'nullable|in:bed,breakfast,none',
-                'ModeOfPayment' => 'nullable|in:cash,card,gcash',
-                'RefNo' => 'nullable'
+                'CheckOutDate' => 'required|date|after:CheckInDate',
+                'Status' => 'required|in:reserved,checkin,checkout,cancelled,rebooked',
+                'Tax' => 'required|numeric|min:0|max:100',
+                'AddOns' => 'nullable|string',
+                'AmountPaid' => 'required|numeric|min:0',
+                'TotalBalance' => 'required|numeric',
+                'ModeOfPayment' => 'required|string',
+                'RefNo' => 'nullable|string',
+                'IdType' => 'required|string',
+                'IdNumber' => 'required|string'
             ]);
+
+            // Convert Tax from percentage to decimal for storage
+            $validated['Tax'] = $validated['Tax'] / 100;
+            $validated['LastSelectedDiscount'] = $validated['Tax'];
+
+            // Get the tax name from tax_settings
+            $taxSetting = \App\Models\TaxSetting::where('Percent', $validated['Tax'])
+                ->whereNull('deleted_at')
+                ->first();
 
             // Update the booking
             $booking->update($validated);
 
-            // Check if the status is 'checkout'
-            if ($request->Status === 'checkout') {
-                // Update the room status to null
-                Room::where('id', $request->RoomID)->update(['Status' => null]);
-            }else if($request->Status === 'cancelled'){
-                // Update the room status to null
-                Room::where('id', $request->RoomID)->update(['Status' => null]);
-            }else if($request->Status === 'rebooked'){
-                // Update the room status to null
-                Room::where('id', $request->RoomID)->update(['Status' => 1]);
-            }else if($request->Status === 'reserved'){
-                // Update the room status to null
-                Room::where('id', $request->RoomID)->update(['Status' => 1]);
-            }else if($request->Status === 'checkin'){
-                // Update the room status to null
-                Room::where('id', $request->RoomID)->update(['Status' => 1]);
+            // Handle room status updates
+            switch ($request->Status) {
+                case 'checkout':
+                case 'cancelled':
+                    Room::where('id', $request->RoomID)->update(['Status' => null]);
+                    break;
+                case 'rebooked':
+                case 'reserved':
+                case 'checkin':
+                    Room::where('id', $request->RoomID)->update(['Status' => 1]);
+                    break;
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Booking updated successfully',
-                'refresh' => $request->Status === 'checkout' || $request->Status === 'cancelled'
+                'refresh' => in_array($request->Status, ['checkout', 'cancelled']),
+                'tax_name' => $taxSetting ? $taxSetting->Name : null
             ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

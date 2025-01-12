@@ -252,7 +252,7 @@
             <button class="print-btn" onclick="validateAndPrint()" style="margin-right: 10px;">
                 <i class="fa-solid fa-print"></i> Print Invoice
             </button>
-            <button class="print-btn" onclick="sendEmail()" style="background-color: #28a745;">
+            <button class="print-btn" onclick="sendInvoiceEmail()" style="background-color: #28a745;">
                 <i class="fa-solid fa-envelope"></i> Send Email
             </button>
         </div>
@@ -261,6 +261,8 @@
     <div id="toast" class="toast-notification">
         Email copied to clipboard!
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
     function calculateBalance() {
@@ -313,6 +315,65 @@
         }
         
         window.print();
+    }
+
+    async function sendInvoiceEmail() {
+        const amountPaid = document.getElementById('AmountPaid').value;
+        if (!amountPaid) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Amount Required',
+                text: 'Please enter the Amount Paid before sending the invoice.',
+                confirmButtonColor: '#0d6efd'
+            });
+            document.getElementById('AmountPaid').focus();
+            return;
+        }
+
+        // Show loading state
+        Swal.fire({
+            title: 'Sending Invoice',
+            html: 'Please wait...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        try {
+            const response = await fetch('/send-invoice-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    invoice_id: '{{ $invoice->id }}',
+                    email: '{{ $invoice->guest->Email }}',
+                    amount_paid: amountPaid
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Invoice has been sent to {{ $invoice->guest->Email }}',
+                    confirmButtonColor: '#28a745'
+                });
+            } else {
+                throw new Error(result.message || 'Failed to send invoice');
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Error sending invoice: ' + error.message,
+                confirmButtonColor: '#dc3545'
+            });
+        }
     }
     </script>
 

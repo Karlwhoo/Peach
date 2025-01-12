@@ -31,12 +31,14 @@
             <p>Check in</p>
         </a>
     </li>
+    {{-- Temporarily hidden invoice menu item
     <li class="nav-item">
         <a href="/invoice" class="nav-link {{ Request::is('invoice') ? 'active' : '' }}">
             <i class="fa-solid fa-file-invoice-dollar"></i>
             <p>Invoice</p>
         </a>
     </li>
+    --}}
     @endif
 
     @if(Auth::user()->Role == 'Manager')

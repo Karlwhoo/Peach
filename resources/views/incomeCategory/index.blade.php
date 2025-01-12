@@ -28,6 +28,7 @@
                                 <tr>
                                     <th class="text-center align-middle">Tracking Number</th>
                                     <th class="text-center align-middle">Name</th>
+                                    <th class="text-center align-middle">Category</th>
                                     <th class="text-center align-middle">Purchase Date</th>
                                     <th class="text-end align-middle">Purchase Cost</th>
                                     <th class="text-center align-middle">Useful Life</th>
@@ -69,6 +70,21 @@
                                     <label class="col-sm-3 col-form-label">Asset Name</label>
                                     <div class="col-sm-9">
                                         <input type="text" class="form-control" name="name" required>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label class="col-sm-3 col-form-label">Category</label>
+                                    <div class="col-sm-9">
+                                        <select class="form-select" name="category" required>
+                                            <option value="">Select Category</option>
+                                            <option value="Furnitures and Fixtures">Furnitures and Fixtures</option>
+                                            <option value="Appliances">Appliances</option>
+                                            <option value="Technology and Electronics">Technology and Electronics</option>
+                                            <option value="Bedding and Linen">Bedding and Linen</option>
+                                            <option value="Kitchen Equipment">Kitchen Equipment</option>
+                                            <option value="Bathroom Fixtures and Equipment">Bathroom Fixtures and Equipment</option>
+                                            <option value="Decorative Items">Decorative Items</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
@@ -193,6 +209,21 @@
                                     <label class="col-sm-3 col-form-label">Asset Name</label>
                                     <div class="col-sm-9">
                                         <input type="text" class="form-control" name="name" id="edit_name" required>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label class="col-sm-3 col-form-label">Category</label>
+                                    <div class="col-sm-9">
+                                        <select class="form-select" name="category" id="edit_category" required>
+                                            <option value="">Select Category</option>
+                                            <option value="Furnitures and Fixtures">Furnitures and Fixtures</option>
+                                            <option value="Appliances">Appliances</option>
+                                            <option value="Technology and Electronics">Technology and Electronics</option>
+                                            <option value="Bedding and Linen">Bedding and Linen</option>
+                                            <option value="Kitchen Equipment">Kitchen Equipment</option>
+                                            <option value="Bathroom Fixtures and Equipment">Bathroom Fixtures and Equipment</option>
+                                            <option value="Decorative Items">Decorative Items</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="row mb-3">

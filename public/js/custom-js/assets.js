@@ -21,6 +21,7 @@ jQuery(function($) {
             columns: [
                 {data: 'tracking_number', name: 'tracking_number'},
                 {data: 'name', name: 'name'},
+                {data: 'category', name: 'category'},
                 {data: 'purchase_date', name: 'purchase_date'},
                 {data: 'purchase_cost', name: 'purchase_cost'},
                 {data: 'useful_life', name: 'useful_life'},
@@ -351,6 +352,7 @@ jQuery(function($) {
                 $('#edit_tracking_number').val(response.tracking_number);
                 $('#edit_name').val(response.name);
                 $('#edit_description').val(response.description);
+                $('#edit_category').val(response.category);
                 $('#edit_purchase_date').val(purchaseDate); // Set formatted date
                 $('#edit_purchase_cost').val(response.purchase_cost);
                 $('#edit_asset_cost').val(response.asset_cost);

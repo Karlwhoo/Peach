@@ -57,8 +57,50 @@ class UserController extends Controller
 
     public function assignRole(Request $request)
     {
-        // return $request->all();
-        return User::find($request->UserID)->update(['Role' => $request->Role]);
+        try {
+            \Log::info('Assign Role Request:', $request->all());
+            
+            $user = User::find($request->UserID);
+            
+            if (!$user) {
+                \Log::error('User not found:', ['user_id' => $request->UserID]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
+
+            \Log::info('Current user data:', $user->toArray());
+            
+            $updated = $user->update(['Role' => $request->Role]);
+            
+            \Log::info('Update result:', ['success' => $updated]);
+
+            if (!$updated) {
+                \Log::error('Failed to update user role');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to update user role'
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Role assigned successfully',
+                'user' => $user->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Role assignment error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign role: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
